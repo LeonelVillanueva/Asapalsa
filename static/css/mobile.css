@@ -1,0 +1,675 @@
+/* ========================================
+   ASAPALSA Analytics - Mobile Styles
+   ======================================== */
+
+:root {
+    --primary-color: #2d5016;
+    --secondary-color: #4a7c59;
+    --accent-color: #6b8e23;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --info-color: #17a2b8;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+    --white: #ffffff;
+    --gray-100: #f8f9fa;
+    --gray-200: #e9ecef;
+    --gray-300: #dee2e6;
+    --gray-400: #ced4da;
+    --gray-500: #adb5bd;
+    --gray-600: #6c757d;
+    --gray-700: #495057;
+    --gray-800: #343a40;
+    --gray-900: #212529;
+    
+    --gradient-primary: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    --gradient-secondary: linear-gradient(135deg, var(--secondary-color) 0%, var(--accent-color) 100%);
+    --gradient-light: linear-gradient(135deg, var(--light-color) 0%, var(--white) 100%);
+    
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow: 0 4px 8px rgba(0,0,0,0.15);
+    --shadow-lg: 0 8px 16px rgba(0,0,0,0.2);
+    --shadow-xl: 0 16px 32px rgba(0,0,0,0.25);
+    
+    --border-radius: 12px;
+    --border-radius-sm: 8px;
+    --border-radius-lg: 16px;
+    
+    --transition: all 0.3s ease;
+    --transition-fast: all 0.15s ease;
+}
+
+/* ========================================
+   Base Styles
+   ======================================== */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: var(--gray-800);
+    background: var(--gradient-light);
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+/* ========================================
+   Mobile Navbar
+   ======================================== */
+
+.mobile-navbar {
+    background: var(--gradient-primary) !important;
+    backdrop-filter: blur(20px);
+    box-shadow: var(--shadow);
+    padding: 0.5rem 0;
+    min-height: 60px;
+}
+
+.mobile-brand {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: var(--white) !important;
+    font-weight: 600;
+}
+
+.mobile-logo {
+    height: 35px;
+    width: auto;
+    margin-right: 10px;
+    border-radius: var(--border-radius-sm);
+}
+
+.mobile-brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.mobile-brand-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--white);
+}
+
+.mobile-brand-subtitle {
+    font-size: 0.7rem;
+    opacity: 0.8;
+    color: var(--white);
+}
+
+.mobile-toggler {
+    border: none !important;
+    padding: 0.25rem 0.5rem;
+    margin-left: auto;
+}
+
+.mobile-toggler:focus {
+    box-shadow: none;
+}
+
+.mobile-nav {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.mobile-nav-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    margin: 0.25rem 0;
+    border-radius: var(--border-radius-sm);
+    color: var(--white) !important;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.mobile-nav-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--white) !important;
+}
+
+.mobile-nav-link i {
+    margin-right: 0.5rem;
+    width: 20px;
+    text-align: center;
+}
+
+/* ========================================
+   Main Content
+   ======================================== */
+
+.mobile-main {
+    padding-top: 80px;
+    min-height: 100vh;
+}
+
+/* ========================================
+   Mobile Hero Section
+   ======================================== */
+
+.mobile-hero {
+    background: var(--gradient-primary);
+    color: var(--white);
+    padding: 2rem 1rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.mobile-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="10" cy="60" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="90" cy="40" r="0.5" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    opacity: 0.3;
+    z-index: 1;
+}
+
+.mobile-hero > * {
+    position: relative;
+    z-index: 2;
+}
+
+.mobile-hero-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+}
+
+.mobile-hero-subtitle {
+    font-size: 1rem;
+    opacity: 0.9;
+    margin-bottom: 1.5rem;
+    line-height: 1.4;
+}
+
+.mobile-hero-buttons {
+    margin-top: 1.5rem;
+}
+
+.mobile-btn {
+    background: var(--white);
+    color: var(--primary-color);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    font-size: 1rem;
+    transition: var(--transition);
+    box-shadow: var(--shadow);
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-btn:hover {
+    background: var(--gray-100);
+    color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* ========================================
+   Mobile Sections
+   ======================================== */
+
+.mobile-section {
+    padding: 2rem 1rem;
+}
+
+.mobile-card {
+    background: var(--white);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--gray-200);
+}
+
+.mobile-card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+}
+
+.mobile-card-text {
+    color: var(--gray-600);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+/* ========================================
+   Mobile Upload Area
+   ======================================== */
+
+.mobile-upload-area {
+    border: 2px dashed var(--gray-300);
+    border-radius: var(--border-radius);
+    padding: 2rem 1rem;
+    text-align: center;
+    background: var(--gray-50);
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.mobile-upload-area:hover {
+    border-color: var(--primary-color);
+    background: var(--gray-100);
+}
+
+.mobile-upload-area.dragover {
+    border-color: var(--primary-color);
+    background: rgba(45, 80, 22, 0.05);
+}
+
+.mobile-upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.mobile-upload-icon {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.mobile-upload-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 0.5rem;
+}
+
+.mobile-upload-text {
+    color: var(--gray-600);
+    margin-bottom: 1.5rem;
+}
+
+.mobile-upload-btn {
+    background: var(--primary-color);
+    color: var(--white);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius-sm);
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.mobile-upload-btn:hover {
+    background: var(--secondary-color);
+    color: var(--white);
+}
+
+.mobile-file-info {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--gray-100);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--gray-300);
+}
+
+.mobile-file-details {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.mobile-file-details i {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+.mobile-file-text {
+    flex: 1;
+}
+
+.mobile-file-name {
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 0.25rem;
+}
+
+.mobile-file-size {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+}
+
+/* ========================================
+   Mobile Chart Buttons
+   ======================================== */
+
+.mobile-chart-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.mobile-chart-btn {
+    background: var(--white);
+    border: 2px solid var(--gray-200);
+    border-radius: var(--border-radius-sm);
+    padding: 1rem 0.75rem;
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 80px;
+}
+
+.mobile-chart-btn:hover {
+    border-color: var(--primary-color);
+    background: var(--gray-50);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.mobile-chart-btn.active {
+    border-color: var(--primary-color);
+    background: rgba(45, 80, 22, 0.1);
+    color: var(--primary-color);
+}
+
+.mobile-chart-btn i {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+.mobile-chart-btn span {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+.mobile-chart-btn.active span {
+    color: var(--primary-color);
+}
+
+/* ========================================
+   Mobile Form Elements
+   ======================================== */
+
+.mobile-form-group {
+    margin-bottom: 1rem;
+}
+
+.mobile-form-label {
+    display: block;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.mobile-form-select,
+.mobile-form-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid var(--gray-300);
+    border-radius: var(--border-radius-sm);
+    font-size: 1rem;
+    transition: var(--transition);
+    background: var(--white);
+}
+
+.mobile-form-select:focus,
+.mobile-form-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(45, 80, 22, 0.1);
+}
+
+/* ========================================
+   Mobile Chart Display
+   ======================================== */
+
+.mobile-chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.mobile-chart-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin: 0;
+}
+
+.mobile-chart-container {
+    background: var(--white);
+    border-radius: var(--border-radius-sm);
+    padding: 1rem;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--gray-200);
+}
+
+/* ========================================
+   Mobile Summary Cards
+   ======================================== */
+
+.mobile-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.mobile-summary-card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius-sm);
+    padding: 1rem;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+
+.mobile-summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.mobile-summary-card .icon {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.mobile-summary-card .value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 0.25rem;
+}
+
+.mobile-summary-card .label {
+    font-size: 0.75rem;
+    color: var(--gray-600);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+/* ========================================
+   Mobile Footer
+   ======================================== */
+
+.mobile-footer {
+    background: var(--gray-800);
+    color: var(--white);
+    padding: 1.5rem 1rem;
+    text-align: center;
+}
+
+.mobile-footer-text {
+    margin: 0.25rem 0;
+    font-size: 0.875rem;
+    opacity: 0.8;
+}
+
+/* ========================================
+   Mobile Modal
+   ======================================== */
+
+.mobile-modal {
+    border-radius: var(--border-radius);
+    border: none;
+    box-shadow: var(--shadow-xl);
+}
+
+.mobile-spinner {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.mobile-modal-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 0.5rem;
+}
+
+.mobile-modal-text {
+    color: var(--gray-600);
+    margin: 0;
+}
+
+/* ========================================
+   Responsive Adjustments
+   ======================================== */
+
+@media (max-width: 480px) {
+    .mobile-hero-title {
+        font-size: 1.5rem;
+    }
+    
+    .mobile-hero-subtitle {
+        font-size: 0.9rem;
+    }
+    
+    .mobile-chart-buttons {
+        grid-template-columns: 1fr;
+    }
+    
+    .mobile-summary-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .mobile-card {
+        padding: 1rem;
+    }
+    
+    .mobile-section {
+        padding: 1.5rem 0.75rem;
+    }
+}
+
+@media (max-width: 360px) {
+    .mobile-logo {
+        height: 30px;
+    }
+    
+    .mobile-brand-title {
+        font-size: 0.9rem;
+    }
+    
+    .mobile-brand-subtitle {
+        font-size: 0.65rem;
+    }
+    
+    .mobile-hero-title {
+        font-size: 1.3rem;
+    }
+    
+    .mobile-chart-btn {
+        min-height: 70px;
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .mobile-chart-btn i {
+        font-size: 1.25rem;
+    }
+    
+    .mobile-chart-btn span {
+        font-size: 0.8rem;
+    }
+}
+
+/* ========================================
+   Utility Classes
+   ======================================== */
+
+.d-none {
+    display: none !important;
+}
+
+.text-center {
+    text-align: center !important;
+}
+
+.mb-0 {
+    margin-bottom: 0 !important;
+}
+
+.mt-0 {
+    margin-top: 0 !important;
+}
+
+/* ========================================
+   Animation Classes
+   ======================================== */
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.slide-up {
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

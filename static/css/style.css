@@ -379,9 +379,10 @@ body {
     }
     
     .chart-btn {
-        height: 90px;
-        margin-bottom: 1rem;
-        font-size: 0.9rem;
+        height: 60px;
+        margin-bottom: 0.8rem;
+        font-size: 0.75rem;
+        padding: 0.4rem;
     }
     
     .chart-container {
@@ -389,9 +390,10 @@ body {
     }
     
     .summary-card {
-        min-width: 200px;
-        max-width: 300px;
-        margin-bottom: 1.5rem;
+        min-width: 160px;
+        max-width: 240px;
+        margin-bottom: 1rem;
+        padding: 1.2rem 1rem;
     }
     
     .navbar-nav {
@@ -412,11 +414,13 @@ body {
     .hero-section h1 {
         font-size: 2.2rem;
         line-height: 1.2;
+        margin-bottom: 1rem;
     }
     
     .hero-section p {
         font-size: 1.1rem;
         margin-bottom: 1.5rem;
+        line-height: 1.5;
     }
     
     .hero-section .btn {
@@ -425,18 +429,30 @@ body {
         margin-bottom: 1rem;
         padding: 12px 20px;
         font-size: 1rem;
+        min-height: 48px;
+    }
+    
+    .hero-section .btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .hero-section .btn-group .btn {
+        width: 100%;
+        margin-bottom: 0;
     }
     
     .chart-btn {
-        height: 80px;
-        margin-bottom: 0.8rem;
-        font-size: 0.85rem;
-        padding: 0.5rem;
+        height: 50px;
+        margin-bottom: 0.6rem;
+        font-size: 0.7rem;
+        padding: 0.3rem;
     }
     
     .chart-btn i {
-        font-size: 1.5rem;
-        margin-bottom: 0.3rem;
+        font-size: 1.2rem;
+        margin-bottom: 0.2rem;
     }
     
     .chart-container {
@@ -445,22 +461,23 @@ body {
     }
     
     .summary-card {
-        min-width: 180px;
-        max-width: 280px;
-        padding: 1.5rem 1.2rem;
-        margin-bottom: 1rem;
+        min-width: 140px;
+        max-width: 200px;
+        padding: 1rem 0.8rem;
+        margin-bottom: 0.8rem;
     }
     
     .summary-card .value {
-        font-size: 1.4rem;
+        font-size: 1.1rem;
     }
     
     .summary-card .icon {
-        font-size: 1.8rem;
+        font-size: 1.4rem;
+        margin-bottom: 0.5rem;
     }
     
     .summary-card .label {
-        font-size: 0.8rem;
+        font-size: 0.7rem;
     }
     
     #summaryCards {
@@ -472,14 +489,34 @@ body {
     .upload-area {
         padding: 40px 20px;
         margin: 1rem 0;
+        border-radius: 20px;
     }
     
     .upload-area h3 {
         font-size: 1.5rem;
+        margin-bottom: 1rem;
     }
     
     .upload-area p {
         font-size: 1rem;
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
+    }
+    
+    .upload-area .btn {
+        min-height: 48px;
+        font-size: 1rem;
+        padding: 12px 24px;
+    }
+    
+    .upload-area .upload-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1.5rem;
+    }
+    
+    .upload-area .upload-icon i {
+        font-size: 2.5rem;
     }
     
     .card-body {
@@ -501,18 +538,59 @@ body {
     }
     
     .navbar-brand {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
+        text-align: center;
+        flex-direction: column;
+        align-items: center;
+        position: absolute !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        top: 50% !important;
+    }
+    
+    .navbar-brand img {
+        height: 25px !important;
+        width: auto !important;
+        margin-right: 0 !important;
+        margin-bottom: 5px !important;
+    }
+    
+    .navbar-brand .brand-title {
+        font-size: 0.8rem !important;
+        line-height: 1 !important;
+        text-align: center;
+    }
+    
+    .navbar-brand .brand-subtitle {
+        font-size: 0.6rem !important;
+        opacity: 0.8 !important;
+        text-align: center;
     }
     
     .navbar-toggler {
         border: none;
         padding: 0.25rem 0.5rem;
+        margin-left: auto;
     }
     
     .navbar-collapse {
         margin-top: 1rem;
         border-top: 1px solid rgba(255,255,255,0.1);
         padding-top: 1rem;
+    }
+    
+    .navbar-nav {
+        margin-top: 0.5rem;
+    }
+    
+    .navbar-nav .nav-link {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .navbar-nav .nav-link:last-child {
+        border-bottom: none;
     }
 }
 
@@ -581,15 +659,15 @@ body {
     }
     
     .chart-btn {
-        height: 70px;
-        margin-bottom: 0.6rem;
-        font-size: 0.8rem;
-        padding: 0.4rem;
+        height: 45px;
+        margin-bottom: 0.5rem;
+        font-size: 0.65rem;
+        padding: 0.25rem;
     }
     
     .chart-btn i {
-        font-size: 1.3rem;
-        margin-bottom: 0.2rem;
+        font-size: 1rem;
+        margin-bottom: 0.1rem;
     }
     
     .chart-container {
@@ -598,25 +676,25 @@ body {
     }
     
     .summary-card {
-        min-width: 150px;
-        max-width: 220px;
-        padding: 1rem 0.8rem;
-        margin-bottom: 0.8rem;
-    }
-    
-    .summary-card .value {
-        font-size: 1.1rem;
-        line-height: 1.2;
-    }
-    
-    .summary-card .icon {
-        font-size: 1.4rem;
+        min-width: 120px;
+        max-width: 180px;
+        padding: 0.8rem 0.6rem;
         margin-bottom: 0.6rem;
     }
     
+    .summary-card .value {
+        font-size: 0.95rem;
+        line-height: 1.1;
+    }
+    
+    .summary-card .icon {
+        font-size: 1.1rem;
+        margin-bottom: 0.4rem;
+    }
+    
     .summary-card .label {
-        font-size: 0.7rem;
-        line-height: 1.2;
+        font-size: 0.6rem;
+        line-height: 1.1;
     }
     
     #summaryCards {
@@ -656,12 +734,38 @@ body {
     }
     
     .navbar-brand {
-        font-size: 1.1rem;
+        font-size: 0.9rem;
+        text-align: center;
+        flex-direction: column;
+        align-items: center;
+        position: absolute !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        top: 50% !important;
+    }
+    
+    .navbar-brand img {
+        height: 20px !important;
+        width: auto !important;
+        margin-right: 0 !important;
+        margin-bottom: 3px !important;
+    }
+    
+    .navbar-brand .brand-title {
+        font-size: 0.7rem !important;
+        line-height: 1 !important;
+        text-align: center;
+    }
+    
+    .navbar-brand .brand-subtitle {
+        font-size: 0.55rem !important;
+        opacity: 0.8 !important;
+        text-align: center;
     }
     
     .navbar-nav .nav-link {
         padding: 0.6rem 0.8rem;
-        font-size: 1rem;
+        font-size: 0.9rem;
     }
     
     .form-control,
@@ -786,21 +890,22 @@ body {
     }
     
     .summary-card {
-        min-width: 140px;
-        max-width: 200px;
-        padding: 0.8rem 0.6rem;
+        min-width: 110px;
+        max-width: 160px;
+        padding: 0.6rem 0.4rem;
     }
     
     .summary-card .value {
-        font-size: 1rem;
+        font-size: 0.85rem;
     }
     
     .summary-card .icon {
-        font-size: 1.2rem;
+        font-size: 1rem;
+        margin-bottom: 0.3rem;
     }
     
     .summary-card .label {
-        font-size: 0.65rem;
+        font-size: 0.55rem;
     }
     
     .btn {
@@ -818,7 +923,33 @@ body {
     }
     
     .navbar-brand {
-        font-size: 1rem;
+        font-size: 0.8rem;
+        text-align: center;
+        flex-direction: column;
+        align-items: center;
+        position: absolute !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        top: 50% !important;
+    }
+    
+    .navbar-brand img {
+        height: 18px !important;
+        width: auto !important;
+        margin-right: 0 !important;
+        margin-bottom: 2px !important;
+    }
+    
+    .navbar-brand .brand-title {
+        font-size: 0.65rem !important;
+        line-height: 1 !important;
+        text-align: center;
+    }
+    
+    .navbar-brand .brand-subtitle {
+        font-size: 0.5rem !important;
+        opacity: 0.8 !important;
+        text-align: center;
     }
     
     .form-control,
@@ -844,8 +975,22 @@ body {
     }
     
     .summary-card {
-        min-width: 160px;
-        max-width: 200px;
+        min-width: 60px;
+        max-width: 100px;
+        padding: 0.3rem 0.15rem;
+    }
+    
+    .summary-card .value {
+        font-size: 0.6rem;
+    }
+    
+    .summary-card .icon {
+        font-size: 0.7rem;
+        margin-bottom: 0.1rem;
+    }
+    
+    .summary-card .label {
+        font-size: 0.4rem;
     }
 }
 
@@ -1250,8 +1395,23 @@ body {
     }
     
     .summary-card {
-        margin-bottom: 1rem;
-        padding: 1rem;
+        margin-bottom: 0.8rem;
+        padding: 0.6rem 0.4rem;
+        min-width: 90px;
+        max-width: 120px;
+    }
+    
+    .summary-card .value {
+        font-size: 0.75rem;
+    }
+    
+    .summary-card .icon {
+        font-size: 0.8rem;
+        margin-bottom: 0.2rem;
+    }
+    
+    .summary-card .label {
+        font-size: 0.45rem;
     }
     
     .navbar-brand {
@@ -1296,7 +1456,22 @@ body {
     }
     
     .summary-card {
-        padding: 0.75rem;
+        padding: 0.25rem 0.15rem;
+        min-width: 50px;
+        max-width: 70px;
+    }
+    
+    .summary-card .value {
+        font-size: 0.55rem;
+    }
+    
+    .summary-card .icon {
+        font-size: 0.55rem;
+        margin-bottom: 0.1rem;
+    }
+    
+    .summary-card .label {
+        font-size: 0.3rem;
     }
     
     .btn {

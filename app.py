@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory, make_response
+from flask import Flask, render_template, request, jsonify, send_from_directory, make_response, redirect, url_for
 import pandas as pd
 import json
 import os
@@ -16,10 +16,35 @@ import requests
 import hashlib
 import time
 from functools import lru_cache
+import re
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# Función para detectar dispositivos móviles
+def is_mobile_device():
+    """Detecta si el usuario está accediendo desde un dispositivo móvil"""
+    user_agent = request.headers.get('User-Agent', '').lower()
+    
+    # Patrones comunes de dispositivos móviles
+    mobile_patterns = [
+        'mobile', 'android', 'iphone', 'ipad', 'ipod', 'blackberry', 
+        'windows phone', 'opera mini', 'iemobile', 'palm', 'smartphone',
+        'tablet', 'kindle', 'silk', 'playbook', 'bb10', 'windows mobile'
+    ]
+    
+    # Verificar si el User-Agent contiene algún patrón móvil
+    for pattern in mobile_patterns:
+        if pattern in user_agent:
+            return True
+    
+    # Verificar tamaño de pantalla si está disponible en headers
+    screen_width = request.headers.get('X-Screen-Width')
+    if screen_width and int(screen_width) < 768:
+        return True
+    
+    return False
 
 
 # Crear directorio de uploads si no existe
@@ -706,7 +731,16 @@ def get_chart_data(chart_type):
 
 @app.route('/')
 def index():
+    # Detectar si es un dispositivo móvil y redirigir
+    if is_mobile_device():
+        return redirect(url_for('mobile_index'))
     return render_template('index.html')
+
+
+@app.route('/mobile')
+def mobile_index():
+    """Versión móvil de la página principal"""
+    return render_template('mobile.html')
 
 
 @app.route('/historial')
