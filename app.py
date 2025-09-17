@@ -708,6 +708,7 @@ def get_chart_data(chart_type):
 def index():
     return render_template('index.html')
 
+
 @app.route('/historial')
 def historial():
     return render_template('historial.html')
