@@ -1,0 +1,109 @@
+DESCRIPCION;T.M.;MES;year;TIPO_DATO;CALIDAD;OBSERVACIONES
+Fruta Recibida;5000.00;enero;2024;normal;alta;Datos consistentes
+Fruta Proyectada;5500.00;enero;2024;normal;alta;Proyección realista
+Proyeccion Compra de Fruta Ajustada;5250.00;enero;2024;normal;alta;Ajuste estándar
+Fruta Recibida;2000.00;febrero;2024;normal;media;Temporada baja
+Fruta Proyectada;2500.00;febrero;2024;normal;media;Proyección conservadora
+Proyeccion Compra de Fruta Ajustada;2250.00;febrero;2024;normal;media;Ajuste por temporada
+Fruta Recibida;8000.00;marzo;2024;normal;alta;Inicio temporada alta
+Fruta Proyectada;8500.00;marzo;2024;normal;alta;Proyección optimista
+Proyeccion Compra de Fruta Ajustada;8250.00;marzo;2024;normal;alta;Ajuste estándar
+Fruta Recibida;1500.00;abril;2024;normal;baja;Caída estacional
+Fruta Proyectada;2000.00;abril;2024;normal;baja;Proyección conservadora
+Proyeccion Compra de Fruta Ajustada;1750.00;abril;2024;normal;baja;Ajuste por caída
+Fruta Recibida;9000.00;mayo;2024;normal;alta;Temporada alta
+Fruta Proyectada;9500.00;mayo;2024;normal;alta;Proyección optimista
+Proyeccion Compra de Fruta Ajustada;9250.00;mayo;2024;normal;alta;Ajuste estándar
+Fruta Recibida;1200.00;junio;2024;normal;baja;Temporada baja
+Fruta Proyectada;1700.00;junio;2024;normal;baja;Proyección conservadora
+Proyeccion Compra de Fruta Ajustada;1450.00;junio;2024;normal;baja;Ajuste por temporada
+Fruta Recibida;7500.00;julio;2024;normal;alta;Recuperación estacional
+Fruta Proyectada;8000.00;julio;2024;normal;alta;Proyección realista
+Proyeccion Compra de Fruta Ajustada;7750.00;julio;2024;normal;alta;Ajuste estándar
+Fruta Recibida;3000.00;agosto;2024;normal;media;Temporada media
+Fruta Proyectada;3500.00;agosto;2024;normal;media;Proyección conservadora
+Proyeccion Compra de Fruta Ajustada;3250.00;agosto;2024;normal;media;Ajuste estándar
+Fruta Recibida;6000.00;septiembre;2024;normal;alta;Temporada alta
+Fruta Proyectada;6500.00;septiembre;2024;normal;alta;Proyección optimista
+Proyeccion Compra de Fruta Ajustada;6250.00;septiembre;2024;normal;alta;Ajuste estándar
+Fruta Recibida;1800.00;octubre;2024;normal;baja;Caída estacional
+Fruta Proyectada;2300.00;octubre;2024;normal;baja;Proyección conservadora
+Proyeccion Compra de Fruta Ajustada;2050.00;octubre;2024;normal;baja;Ajuste por caída
+Fruta Recibida;8500.00;noviembre;2024;normal;alta;Temporada alta
+Fruta Proyectada;9000.00;noviembre;2024;normal;alta;Proyección optimista
+Proyeccion Compra de Fruta Ajustada;8750.00;noviembre;2024;normal;alta;Ajuste estándar
+Fruta Recibida;2500.00;diciembre;2024;normal;media;Fin de año
+Fruta Proyectada;3000.00;diciembre;2024;normal;media;Proyección conservadora
+Proyeccion Compra de Fruta Ajustada;2750.00;diciembre;2024;normal;media;Ajuste estándar
+Fruta Recibida;15000.00;enero;2025;pico;critica;PICO ANÓMALO - Posible error de medición
+Fruta Proyectada;15500.00;enero;2025;pico;critica;Proyección inflada por pico
+Proyeccion Compra de Fruta Ajustada;15250.00;enero;2025;pico;critica;Ajuste no aplicado - requiere revisión
+Fruta Recibida;50.00;febrero;2025;atipico;critica;VALOR ATÍPICO - Posible falla en sistema
+Fruta Proyectada;100.00;febrero;2025;atipico;critica;Proyección basada en dato erróneo
+Proyeccion Compra de Fruta Ajustada;75.00;febrero;2025;atipico;critica;Ajuste insuficiente - dato sospechoso
+Fruta Recibida;8000.00;marzo;2025;normal;alta;Recuperación después de anomalías
+Fruta Proyectada;8500.00;marzo;2025;normal;alta;Proyección realista
+Proyeccion Compra de Fruta Ajustada;8250.00;marzo;2025;normal;alta;Ajuste estándar
+Fruta Recibida;0.00;abril;2025;faltante;critica;DATOS FALTANTES - Sistema no reportó
+Fruta Proyectada;2000.00;abril;2025;faltante;critica;Proyección sin base real
+Proyeccion Compra de Fruta Ajustada;1000.00;abril;2025;faltante;critica;Ajuste estimado - datos faltantes
+Fruta Recibida;12000.00;mayo;2025;inconsistente;media;Dato inconsistente con patrón histórico
+Fruta Proyectada;12500.00;mayo;2025;inconsistente;media;Proyección basada en dato inconsistente
+Proyeccion Compra de Fruta Ajustada;12250.00;mayo;2025;inconsistente;media;Ajuste aplicado pero dato dudoso
+Fruta Recibida;3000.00;junio;2025;normal;alta;Datos consistentes
+Fruta Proyectada;3500.00;junio;2025;normal;alta;Proyección realista
+Proyeccion Compra de Fruta Ajustada;3250.00;junio;2025;normal;alta;Ajuste estándar
+Fruta Recibida;25000.00;julio;2025;pico;critica;PICO EXTREMO - Posible error de entrada
+Fruta Proyectada;25500.00;julio;2025;pico;critica;Proyección inflada por pico extremo
+Proyeccion Compra de Fruta Ajustada;25250.00;julio;2025;pico;critica;Ajuste no aplicado - requiere validación
+Fruta Recibida;4000.00;agosto;2025;normal;media;Retorno a normalidad
+Fruta Proyectada;4500.00;agosto;2025;normal;media;Proyección conservadora
+Proyeccion Compra de Fruta Ajustada;4250.00;agosto;2025;normal;media;Ajuste estándar
+Fruta Recibida;7000.00;septiembre;2025;normal;alta;Temporada alta
+Fruta Proyectada;7500.00;septiembre;2025;normal;alta;Proyección optimista
+Proyeccion Compra de Fruta Ajustada;7250.00;septiembre;2025;normal;alta;Ajuste estándar
+Fruta Recibida;200.00;octubre;2025;atipico;critica;VALOR ATÍPICO BAJO - Posible problema logístico
+Fruta Proyectada;700.00;octubre;2025;atipico;critica;Proyección ajustada por valor atípico
+Proyeccion Compra de Fruta Ajustada;450.00;octubre;2025;atipico;critica;Ajuste por valor atípico
+Fruta Recibida;9000.00;noviembre;2025;normal;alta;Recuperación estacional
+Fruta Proyectada;9500.00;noviembre;2025;normal;alta;Proyección realista
+Proyeccion Compra de Fruta Ajustada;9250.00;noviembre;2025;normal;alta;Ajuste estándar
+Fruta Recibida;500.00;diciembre;2025;inconsistente;media;Dato inconsistente con tendencia
+Fruta Proyectada;1000.00;diciembre;2025;inconsistente;media;Proyección conservadora por inconsistencia
+Proyeccion Compra de Fruta Ajustada;750.00;diciembre;2025;inconsistente;media;Ajuste por inconsistencia
+Fruta Recibida;6000.00;enero;2026;normal;alta;Datos consistentes
+Fruta Proyectada;6500.00;enero;2026;normal;alta;Proyección realista
+Proyeccion Compra de Fruta Ajustada;6250.00;enero;2026;normal;alta;Ajuste estándar
+Fruta Recibida;18000.00;febrero;2026;pico;critica;PICO INESPERADO - Requiere investigación
+Fruta Proyectada;18500.00;febrero;2026;pico;critica;Proyección inflada por pico inesperado
+Proyeccion Compra de Fruta Ajustada;18250.00;febrero;2026;pico;critica;Ajuste no aplicado - pico sospechoso
+Fruta Recibida;3500.00;marzo;2026;normal;media;Retorno a normalidad
+Fruta Proyectada;4000.00;marzo;2026;normal;media;Proyección conservadora
+Proyeccion Compra de Fruta Ajustada;3750.00;marzo;2026;normal;media;Ajuste estándar
+Fruta Recibida;0.00;abril;2026;faltante;critica;DATOS FALTANTES - Error de sistema
+Fruta Proyectada;3000.00;abril;2026;faltante;critica;Proyección estimada sin datos
+Proyeccion Compra de Fruta Ajustada;1500.00;abril;2026;faltante;critica;Ajuste estimado - sin base real
+Fruta Recibida;8000.00;mayo;2026;normal;alta;Datos consistentes
+Fruta Proyectada;8500.00;mayo;2026;normal;alta;Proyección realista
+Proyeccion Compra de Fruta Ajustada;8250.00;mayo;2026;normal;alta;Ajuste estándar
+Fruta Recibida;1200.00;junio;2026;normal;baja;Temporada baja
+Fruta Proyectada;1700.00;junio;2026;normal;baja;Proyección conservadora
+Proyeccion Compra de Fruta Ajustada;1450.00;junio;2026;normal;baja;Ajuste por temporada
+Fruta Recibida;30000.00;julio;2026;pico;critica;PICO MÁXIMO - Posible error de escala
+Fruta Proyectada;30500.00;julio;2026;pico;critica;Proyección inflada por pico máximo
+Proyeccion Compra de Fruta Ajustada;30250.00;julio;2026;pico;critica;Ajuste no aplicado - pico extremo
+Fruta Recibida;4500.00;agosto;2026;normal;media;Normalización después de pico
+Fruta Proyectada;5000.00;agosto;2026;normal;media;Proyección conservadora
+Proyeccion Compra de Fruta Ajustada;4750.00;agosto;2026;normal;media;Ajuste estándar
+Fruta Recibida;7500.00;septiembre;2026;normal;alta;Temporada alta
+Fruta Proyectada;8000.00;septiembre;2026;normal;alta;Proyección optimista
+Proyeccion Compra de Fruta Ajustada;7750.00;septiembre;2026;normal;alta;Ajuste estándar
+Fruta Recibida;100.00;octubre;2026;atipico;critica;VALOR ATÍPICO MÍNIMO - Posible falla
+Fruta Proyectada;600.00;octubre;2026;atipico;critica;Proyección ajustada por valor atípico
+Proyeccion Compra de Fruta Ajustada;350.00;octubre;2026;atipico;critica;Ajuste por valor atípico
+Fruta Recibida;8500.00;noviembre;2026;normal;alta;Recuperación estacional
+Fruta Proyectada;9000.00;noviembre;2026;normal;alta;Proyección realista
+Proyeccion Compra de Fruta Ajustada;8750.00;noviembre;2026;normal;alta;Ajuste estándar
+Fruta Recibida;2800.00;diciembre;2026;normal;media;Fin de año
+Fruta Proyectada;3300.00;diciembre;2026;normal;media;Proyección conservadora
+Proyeccion Compra de Fruta Ajustada;3050.00;diciembre;2026;normal;media;Ajuste estándar

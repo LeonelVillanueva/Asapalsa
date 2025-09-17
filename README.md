@@ -1,222 +1,159 @@
-# ASAPALSA Analytics - Sistema de Análisis de Datos Agroindustriales
+# 🚀 ASAPALSA Analytics
 
-## Descripción
+Sistema de análisis de datos agroindustriales con visualizaciones interactivas y estadísticas avanzadas.
 
-ASAPALSA Analytics es una aplicación web moderna que permite analizar datos agroindustriales de manera interactiva. La aplicación procesa archivos CSV con información de producción de fruta, proyecciones y datos históricos, generando visualizaciones dinámicas y actualizaciones en tiempo real.
+## 📊 Características
 
-## Características Principales
+- **Carga de Datos**: Procesamiento automático de archivos CSV
+- **Visualizaciones**: 7 tipos de gráficos interactivos
+- **Análisis Estadístico**: Correlaciones, tendencias y métricas
+- **Reportes**: Generación automática de PDFs
+- **Historial**: Almacenamiento de análisis previos
+- **Exportación**: Descarga de datos y gráficos
 
-- **Carga de Archivos CSV**: Interfaz drag-and-drop para subir archivos CSV
-- **Procesamiento Automático**: Limpieza y transformación automática de datos
-- **Visualizaciones Interactivas**: 5 tipos diferentes de gráficos:
-  - Gráficos de líneas (evolución temporal)
-  - Gráficos de barras apiladas
-  - Comparación fruta proyectada vs recibida
-  - Análisis de precisión de proyecciones
-  - Análisis de diferencias
-- **Actualización en Tiempo Real**: Los datos se actualizan automáticamente cada 30 segundos
-- **Interfaz Responsiva**: Diseño moderno que se adapta a diferentes dispositivos
-- **Resumen de Datos**: Dashboard con métricas clave
+## 🛠️ Tecnologías
 
-## Tecnologías Utilizadas
+- **Backend**: Python Flask
+- **Frontend**: HTML5, CSS3, JavaScript
+- **Visualizaciones**: Chart.js
+- **Procesamiento**: Pandas, NumPy
+- **Base de Datos**: SQLite
+- **Estilos**: Bootstrap 5
 
-### Backend
-- **Flask**: Framework web de Python
-- **Pandas**: Manipulación y análisis de datos
-- **NumPy**: Cálculos numéricos
+## 🚀 Instalación y Uso
 
-### Frontend
-- **HTML5/CSS3**: Estructura y estilos
-- **JavaScript ES6**: Lógica de la aplicación
-- **Bootstrap 5**: Framework CSS responsive
-- **Chart.js**: Librería de gráficos interactivos
-- **Font Awesome**: Iconografía
+### Requisitos
+- Python 3.11+
+- pip (gestor de paquetes)
 
-## Instalación y Uso
-
-### Requisitos Previos
-- Python 3.8 o superior
-- pip (gestor de paquetes de Python)
-
-### Inicio Rápido
-
-1. **Clonar o descargar el proyecto**
-   ```bash
-   git clone <url-del-repositorio>
-   cd ProyectoCD2
-   ```
-
-2. **Iniciar la aplicación (Método Único y Profesional)**
-   ```bash
-   # Modo producción (recomendado)
-   python start.py
-   
-   # Modo desarrollo con auto-reload
-   python start.py --dev
-   
-   # Puerto personalizado
-   python start.py --port 8080
-   
-   # Host personalizado
-   python start.py --host 127.0.0.1
-   ```
-
-3. **Abrir en el navegador**
-   ```
-   http://localhost:5000
-   ```
-
-### Opciones Avanzadas
-
-El script `start.py` incluye múltiples opciones:
-
+### Instalación Local
 ```bash
-# Mostrar ayuda
-python start.py --help
+# 1. Clonar el repositorio
+git clone https://github.com/tuusuario/asapalsa-analytics.git
+cd asapalsa-analytics
 
-# Mostrar información del sistema
-python start.py --info
+# 2. Instalar dependencias
+pip install -r requirements.txt
 
-# Mostrar versión
-python start.py --version
-
-# Desarrollo en puerto específico
-python start.py --dev --port 3000
-
-# Producción en host específico
-python start.py --host 0.0.0.0 --port 8080
+# 3. Ejecutar la aplicación
+python start.py --dev
 ```
 
-### Características del Script de Inicio
+### Acceso
+- **URL Local**: http://localhost:5000
+- **Puerto**: 5000 (configurable)
 
-- ✅ **Verificación automática** de Python y dependencias
-- ✅ **Instalación automática** de dependencias faltantes
-- ✅ **Creación automática** de directorios necesarios
-- ✅ **Modo desarrollo** con auto-reload
-- ✅ **Modo producción** optimizado
-- ✅ **Información detallada** del sistema
-- ✅ **Manejo de errores** robusto
-- ✅ **Interfaz profesional** con colores y emojis
-
-## Uso de la Aplicación
+## 📱 Uso de la Aplicación
 
 ### 1. Cargar Datos
-- Arrastra y suelta un archivo CSV en el área de carga
-- O haz clic en "Seleccionar Archivo" para buscar un archivo
-- El archivo debe tener el formato esperado con columnas: DESCRIPCION, T.M., MES, year
+- Arrastra y suelta archivos CSV
+- O haz clic para seleccionar archivos
+- El sistema validará y procesará automáticamente
 
-### 2. Visualizar Gráficos
-- Selecciona el tipo de gráfico deseado usando los botones
-- Los gráficos se actualizan automáticamente
-- Usa el botón "Actualizar" para refrescar los datos manualmente
+### 2. Visualizaciones
+- **Gráfico de Líneas**: Evolución temporal
+- **Gráfico de Barras**: Comparación por períodos
+- **Gráfico de Comparación**: Proyección vs Realidad
+- **Gráfico de Precisión**: Análisis de exactitud
+- **Gráfico de Diferencias**: Desviaciones detectadas
+- **Gráfico de Dispersión**: Correlaciones
+- **Gráfico Radar**: Análisis multidimensional
 
-### 3. Revisar Resumen
-- El dashboard muestra métricas clave de los datos cargados
-- Incluye información sobre registros, período, toneladas totales, etc.
+### 3. Análisis
+- Métricas estadísticas automáticas
+- Correlaciones entre variables
+- Tendencias y patrones
+- Exportación de reportes
 
-## Formato de Datos CSV
+## 🌐 Despliegue en la Nube
 
-El archivo CSV debe contener las siguientes columnas:
-- `DESCRIPCION`: Descripción del tipo de movimiento
-- `T.M.`: Toneladas métricas (valores numéricos)
-- `MES`: Mes (nombre en español)
-- `year`: Año (número)
+### Opciones Gratuitas
+- **Heroku**: [Guía de despliegue](DEPLOYMENT_GUIDE.md#opción-1-heroku-recomendado)
+- **Railway**: [Guía de despliegue](DEPLOYMENT_GUIDE.md#opción-2-railway-más-fácil)
+- **Render**: [Guía de despliegue](DEPLOYMENT_GUIDE.md#opción-3-render)
+- **PythonAnywhere**: [Guía de despliegue](DEPLOYMENT_GUIDE.md#opción-4-pythonanywhere)
 
-### Ejemplo de formato:
-```csv
-DESCRIPCION;T.M.;MES;year
-Fruta Recibida;3365.65;enero;2017
-Fruta Proyectada;6500.00;enero;2019
-Proyeccion Compra de Fruta Ajustada;10000.00;julio;2019
+### Despliegue Rápido
+```bash
+# 1. Crear cuenta en Heroku
+# 2. Instalar Heroku CLI
+# 3. Desplegar
+heroku create asapalsa-analytics
+git push heroku main
+heroku open
 ```
 
-## Estructura del Proyecto
+## 📁 Estructura del Proyecto
 
 ```
-ProyectoCD2/
-├── start.py              # 🚀 Script de inicio unificado (NUEVO)
-├── app.py                # Aplicación Flask principal
-├── requirements.txt      # Dependencias de Python
-├── README.md            # Este archivo
-├── templates/
-│   ├── index.html       # Plantilla HTML principal
-│   └── historial.html   # Plantilla de historial
-├── static/
-│   ├── css/
-│   │   └── style.css    # Estilos CSS personalizados
-│   ├── js/
-│   │   ├── app.js       # JavaScript de la aplicación
-│   │   └── historial.js # JavaScript del historial
-│   ├── images/
-│   │   ├── asapalsa.png # Logo de la empresa
-│   │   ├── favicon.ico  # Favicon ICO
-│   │   ├── favicon-16x16.png # Favicon 16x16
-│   │   └── favicon-32x32.png # Favicon 32x32
-│   └── manifest.json    # Manifiesto web para PWA
-├── uploads/             # Directorio para archivos subidos (incluye datos de ejemplo)
+asapalsa-analytics/
+├── app.py                 # Aplicación Flask principal
+├── start.py              # Script de inicio
+├── requirements.txt      # Dependencias Python
+├── Procfile             # Configuración Heroku
+├── runtime.txt          # Versión de Python
+├── templates/           # Plantillas HTML
+│   ├── index.html       # Página principal
+│   └── historial.html   # Página de historial
+├── static/              # Archivos estáticos
+│   ├── css/            # Estilos CSS
+│   ├── js/             # JavaScript
+│   └── images/         # Imágenes
+├── uploads/            # Archivos subidos
 └── analytics_history.db # Base de datos SQLite
 ```
 
-### Archivos Eliminados (Unificación)
-- ❌ `start.bat` - Reemplazado por `start.py`
-- ❌ `start.sh` - Reemplazado por `start.py`
-- ❌ `start_dev.bat` - Reemplazado por `start.py --dev`
-- ❌ `dev_server.py` - Reemplazado por `start.py --dev`
-- ❌ `run.py` - Reemplazado por `start.py`
+## 🔧 Configuración
 
-## API Endpoints
-
-- `GET /`: Página principal
-- `POST /upload`: Cargar archivo CSV
-- `GET /chart/<tipo>`: Obtener datos para gráfico específico
-- `GET /data/summary`: Obtener resumen de datos
-
-## Personalización
-
-### Modificar Tipos de Gráficos
-Edita la función `get_chart_data()` en `app.py` para agregar nuevos tipos de visualizaciones.
-
-### Cambiar Estilos
-Modifica `static/css/style.css` para personalizar la apariencia de la aplicación.
-
-### Ajustar Actualización Automática
-Cambia el intervalo en `setupAutoRefresh()` en `static/js/app.js` (actualmente 30 segundos).
-
-## Solución de Problemas
-
-### Error de Codificación
-Si hay problemas con caracteres especiales, asegúrate de que el archivo CSV esté guardado en UTF-8.
-
-### Archivo No Válido
-Verifica que el archivo CSV tenga el formato correcto y las columnas necesarias.
-
-### Puerto en Uso
-Si el puerto 5000 está ocupado, usa el parámetro `--port`:
+### Variables de Entorno
 ```bash
-python start.py --port 8080
+FLASK_ENV=production
+PORT=5000
 ```
 
-### Problemas de Dependencias
-El script `start.py` instala automáticamente las dependencias faltantes. Si hay problemas, ejecuta:
-```bash
-pip install -r requirements.txt
-```
+### Personalización
+- **Colores**: Modifica las variables CSS en `static/css/style.css`
+- **Logo**: Reemplaza `static/images/asapalsa.png`
+- **Título**: Cambia en `templates/index.html`
 
-## Contribuciones
+## 📊 Ejemplo de Datos
 
-Para contribuir al proyecto:
-1. Fork el repositorio
-2. Crea una rama para tu feature
-3. Realiza los cambios
-4. Envía un pull request
+La aplicación procesa archivos CSV con las siguientes columnas:
+- **Fecha**: Formato YYYY-MM-DD
+- **Proyección**: Valores proyectados
+- **Realidad**: Valores reales
+- **Variables adicionales**: Para análisis de correlación
 
-## Licencia
+## 🤝 Contribuciones
 
-Este proyecto está bajo la Licencia MIT. Ver el archivo LICENSE para más detalles.
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
 
-## Contacto
+## 📝 Licencia
 
-- **Desarrollado por**: Grupo 1 - Empresa Agroindustrial ASAPALSA
-- **Integrantes**: Arnold Suate, Leonel Villanueva
-- **Curso**: Ciencia de Datos I - X Semestre CEUTEC
+Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
 
+## 👥 Autores
+
+- **Leonel Villanueva** - Desarrollo principal
+- **Arnold Suate** - Desarrollo principal
+
+## 🙏 Agradecimientos
+
+- Bootstrap por el framework CSS
+- Chart.js por las visualizaciones
+- Flask por el framework web
+- Pandas por el procesamiento de datos
+
+## 📞 Contacto
+
+- **Proyecto**: [GitHub Repository](https://github.com/tuusuario/asapalsa-analytics)
+- **Issues**: [GitHub Issues](https://github.com/tuusuario/asapalsa-analytics/issues)
+- **Email**: tu-email@ejemplo.com
+
+---
+
+⭐ **¡Dale una estrella al proyecto si te gusta!** ⭐
