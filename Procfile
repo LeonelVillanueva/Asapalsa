@@ -1,1 +1,1 @@
-web: python start.py --prod
+web: python start.py
