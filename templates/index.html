@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="description" content="Sistema de análisis de datos agroindustriales con visualizaciones interactivas y estadísticas avanzadas">
+    <meta name="keywords" content="analytics, datos, agroindustria, visualizaciones, estadísticas">
+    <meta name="author" content="Leonel Villanueva y Arnold Suate">
+    <title>ASAPALSA - Análisis de Datos Agroindustriales</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='images/favicon-16x16.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32x32.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/asapalsa.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <!-- Skip to main content link for keyboard navigation -->
+    <a href="#main-content" class="sr-only sr-only-focusable btn btn-primary position-absolute" style="top: 10px; left: 10px; z-index: 9999;">
+        Saltar al contenido principal
+    </a>
+    
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top" style="background: linear-gradient(135deg, #2d5016 0%, #4a7c59 100%); backdrop-filter: blur(20px); box-shadow: 0 4px 20px rgba(45, 80, 22, 0.2);" role="navigation" aria-label="Navegación principal">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#" aria-label="ASAPALSA Analytics - Inicio">
+                <img src="{{ url_for('static', filename='images/asapalsa.png') }}" alt="ASAPALSA Logo" style="height: 50px; width: auto; margin-right: 15px;">
+                <div class="brand-text">
+                    <div class="brand-title" style="font-size: 1.25rem; font-weight: 700; line-height: 1.2;">ASAPALSA Analytics</div>
+                    <div class="brand-subtitle" style="font-size: 0.75rem; opacity: 0.8; font-weight: 400;">Sistema de Análisis Agroindustrial</div>
+                </div>
+            </a>
+            
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegación" style="border: none !important;">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto" role="menubar">
+                    <li class="nav-item" role="none">
+                        <a class="nav-link d-flex align-items-center" href="#upload-section" role="menuitem" aria-label="Ir a la sección de carga de datos">
+                            <i class="fas fa-upload me-2"></i>
+                            <span>Cargar Datos</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" role="none">
+                        <a class="nav-link d-flex align-items-center" href="#charts-section" role="menuitem" aria-label="Ir a la sección de visualizaciones">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            <span>Visualizaciones</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" role="none">
+                        <a class="nav-link d-flex align-items-center" href="#summary-section" role="menuitem" aria-label="Ir a la sección de resumen">
+                            <i class="fas fa-chart-pie me-2"></i>
+                            <span>Resumen</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Dropdown Menu -->
+                    <li class="nav-item dropdown" role="none">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="analyticsDropdown" role="button" 
+                           data-bs-toggle="dropdown" aria-expanded="false" aria-label="Menú de análisis avanzado">
+                            <i class="fas fa-cogs me-2"></i>
+                            <span>Análisis</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="analyticsDropdown" role="menu" style="border-radius: 12px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.15); backdrop-filter: blur(20px); background: rgba(255,255,255,0.95);">
+                            <li role="none">
+                                <a class="dropdown-item d-flex align-items-center" href="/historial" role="menuitem" style="padding: 12px 20px; border-radius: 8px; margin: 4px 8px;">
+                                    <i class="fas fa-history me-3" style="color: #2d5016;"></i>
+                                    <div>
+                                        <div class="fw-bold" style="color: #2c3e50;">Historial</div>
+                                        <small class="text-muted">Análisis guardados anteriormente</small>
+                                    </div>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider" style="margin: 8px 16px;"></li>
+                            <li role="none" style="display: none;">
+                                <a class="dropdown-item d-flex align-items-center" href="#stats-section" role="menuitem" style="padding: 12px 20px; border-radius: 8px; margin: 4px 8px;">
+                                    <i class="fas fa-chart-line me-3" style="color: #2d5016;"></i>
+                                    <div>
+                                        <div class="fw-bold" style="color: #2c3e50;">Estadísticas Avanzadas</div>
+                                        <small class="text-muted">Correlaciones, tendencias y anomalías</small>
+                                    </div>
+                                </a>
+                            </li>
+                            <li role="none" style="display: none;">
+                                <a class="dropdown-item d-flex align-items-center" href="#reports-section" role="menuitem" style="padding: 12px 20px; border-radius: 8px; margin: 4px 8px;">
+                                    <i class="fas fa-file-alt me-3" style="color: #2d5016;"></i>
+                                    <div>
+                                        <div class="fw-bold" style="color: #2c3e50;">Generador de Reportes</div>
+                                        <small class="text-muted">Crear reportes automáticos</small>
+                                    </div>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h1 class="display-4 fw-bold text-white mb-4">
+                        Análisis Inteligente de Datos Agroindustriales
+                    </h1>
+                    <p class="lead text-white mb-4">
+                        Transforma tus datos CSV en visualizaciones interactivas y obtén insights valiosos 
+                        para la toma de decisiones en tiempo real.
+                    </p>
+                    <a href="#upload-section" class="btn btn-light btn-lg">
+                        <i class="fas fa-upload me-2"></i>
+                        Comenzar Análisis
+                    </a>
+                </div>
+                <div class="col-lg-6">
+                    <div class="hero-image text-center">
+                        <img src="{{ url_for('static', filename='images/asapalsa.png') }}" alt="ASAPALSA Logo" style="max-height: 300px; width: auto; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main id="main-content">
+    <!-- Upload Section -->
+    <section id="upload-section" class="py-5" aria-labelledby="upload-title">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="card shadow-lg">
+                        <div class="card-header text-white" style="background: linear-gradient(135deg, #2d5016 0%, #4a7c59 100%);">
+                            <h3 id="upload-title" class="card-title mb-0">
+                                <i class="fas fa-file-csv me-2" aria-hidden="true"></i>
+                                Cargar Archivo CSV
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="upload-area" id="uploadArea" role="button" tabindex="0" 
+                                 aria-label="Área de carga de archivos. Arrastra y suelta tu archivo CSV aquí o haz clic para seleccionar"
+                                 onkeydown="if(event.key==='Enter'||event.key===' ') document.getElementById('fileInput').click()">
+                                <div class="upload-content">
+                                    <i class="fas fa-cloud-upload-alt fa-3x mb-3" style="color: #2d5016;" aria-hidden="true"></i>
+                                    <h5>Arrastra y suelta tu archivo CSV aquí</h5>
+                                    <p class="text-muted">o haz clic para seleccionar un archivo</p>
+                                    <input type="file" id="fileInput" accept=".csv" class="d-none" 
+                                           aria-label="Seleccionar archivo CSV">
+                                    <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()"
+                                            aria-label="Abrir selector de archivos">
+                                        <i class="fas fa-folder-open me-2" aria-hidden="true"></i>
+                                        Seleccionar Archivo
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Progress Bar -->
+                            <div id="progressContainer" class="mt-3" style="display: none;" role="region" aria-live="polite" aria-label="Progreso de carga">
+                                <div class="progress">
+                                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                         role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+                                         aria-label="Progreso de carga del archivo"></div>
+                                </div>
+                                <small id="progressText" class="text-muted">Procesando archivo...</small>
+                            </div>
+
+                            <!-- File Info -->
+                            <div id="fileInfo" class="mt-3" style="display: none;">
+                                <div class="alert alert-success">
+                                    <h6><i class="fas fa-check-circle me-2"></i>Archivo procesado correctamente</h6>
+                                    <div id="fileDetails"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Charts Section -->
+    <section id="charts-section" class="py-5 bg-light" style="display: none;">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <h2 class="text-center mb-5">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Visualizaciones Interactivas
+                    </h2>
+                </div>
+            </div>
+            
+            <!-- Chart Controls -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                Seleccionar Tipo de Gráfico
+                                <span class="badge bg-success ms-2" id="availableChartsCount" style="display: none;">
+                                    <span id="availableCount">0</span>/7 disponibles
+                                </span>
+                            </h5>
+                            <div id="chartButtonsContainer">
+                                <div class="row">
+                                    <div class="col-md-2 mb-2">
+                                        <button class="btn btn-outline-primary w-100 chart-btn" data-chart="line" 
+                                                aria-label="Generar gráfico de líneas" title="Gráfico de líneas temporales">
+                                            <i class="fas fa-chart-line d-block mb-2" aria-hidden="true"></i>
+                                            Líneas
+                                        </button>
+                                    </div>
+                                <div class="col-md-2 mb-2">
+                                    <button class="btn btn-outline-primary w-100 chart-btn" data-chart="bar" 
+                                            aria-label="Generar gráfico de barras" title="Gráfico de barras comparativas">
+                                        <i class="fas fa-chart-bar d-block mb-2" aria-hidden="true"></i>
+                                        Barras
+                                    </button>
+                                </div>
+                                <div class="col-md-2 mb-2">
+                                    <button class="btn btn-outline-primary w-100 chart-btn" data-chart="comparison" 
+                                            aria-label="Generar gráfico de comparación" title="Gráfico de comparación entre variables">
+                                        <i class="fas fa-balance-scale d-block mb-2" aria-hidden="true"></i>
+                                        Comparación
+                                    </button>
+                                </div>
+                                <div class="col-md-2 mb-2">
+                                    <button class="btn btn-outline-primary w-100 chart-btn" data-chart="precision" 
+                                            aria-label="Generar gráfico de precisión" title="Gráfico de precisión de proyecciones">
+                                        <i class="fas fa-bullseye d-block mb-2" aria-hidden="true"></i>
+                                        Precisión
+                                    </button>
+                                </div>
+                                <div class="col-md-2 mb-2">
+                                    <button class="btn btn-outline-primary w-100 chart-btn" data-chart="difference" 
+                                            aria-label="Generar gráfico de diferencias" title="Gráfico de diferencias entre proyecciones y real">
+                                        <i class="fas fa-chart-area d-block mb-2" aria-hidden="true"></i>
+                                        Diferencias
+                                    </button>
+                                </div>
+                                <div class="col-md-2 mb-2">
+                                    <button class="btn btn-outline-primary w-100 chart-btn" data-chart="scatter" 
+                                            aria-label="Generar gráfico de dispersión" title="Gráfico de dispersión de datos">
+                                        <i class="fas fa-dot-circle d-block mb-2" aria-hidden="true"></i>
+                                        Dispersión
+                                    </button>
+                                </div>
+                                <div class="col-md-2 mb-2">
+                                    <button class="btn btn-outline-primary w-100 chart-btn" data-chart="radar" 
+                                            aria-label="Generar gráfico radar" title="Gráfico radar multidimensional">
+                                        <i class="fas fa-bullseye d-block mb-2" aria-hidden="true"></i>
+                                        Radar
+                                    </button>
+                                </div>
+                                <div class="col-md-2 mb-2">
+                                    <button class="btn btn-outline-success w-100" id="refreshBtn">
+                                        <i class="fas fa-sync-alt d-block mb-2"></i>
+                                        Actualizar
+                                    </button>
+                                </div>
+                            </div>
+                            
+
+                            <!-- Botones de exportación -->
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="d-flex flex-wrap gap-2 justify-content-center">
+                                        <button type="button" class="btn btn-success" id="exportPNGBtn" title="Exportar gráfico como PNG">
+                                            <i class="fas fa-image me-1"></i>Exportar PNG
+                                        </button>
+                                        
+                                        <button type="button" class="btn btn-primary" id="exportPDFBtn" title="Exportar gráfico como PDF">
+                                            <i class="fas fa-file-pdf me-1"></i>Exportar PDF
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Mensaje cuando no hay gráficos disponibles -->
+                            <div id="noChartsMessage" class="alert alert-warning text-center" style="display: none;">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>No hay gráficos disponibles</strong><br>
+                                <small>Los datos cargados no contienen la información necesaria para generar visualizaciones. Verifica que el archivo CSV tenga las columnas correctas.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Container -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0" id="chartTitle">Selecciona un tipo de gráfico</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="mainChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Summary Section -->
+    <section id="summary-section" class="py-5" style="display: none;">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <h2 class="text-center mb-5">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Resumen de Datos
+                    </h2>
+                </div>
+            </div>
+            
+            <div class="row" id="summaryCards">
+                <!-- Summary cards will be populated by JavaScript -->
+            </div>
+            
+            <!-- Save Analysis Button -->
+            <div class="row mt-4">
+                <div class="col-12 text-center">
+                    <button class="btn btn-success btn-lg" id="saveAnalysisBtn" style="display: none;">
+                        <i class="fas fa-save me-2"></i>
+                        Guardar Análisis en Historial
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+        <!-- Advanced Statistics Section -->
+        <section id="stats-section" class="py-5" style="display: none;" data-lazy-load="statistics">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        <h2 class="text-center mb-5">
+                            <i class="fas fa-chart-line me-2"></i>
+                            Análisis Estadístico Avanzado
+                        </h2>
+                    </div>
+                </div>
+            
+            <div class="row">
+                <div class="col-lg-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-calculator me-2"></i>
+                                Correlaciones
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="correlationMatrix" class="table-responsive">
+                                <!-- Matriz de correlaciones se cargará aquí -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-trending-up me-2"></i>
+                                Tendencias
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="trendAnalysis">
+                                <!-- Análisis de tendencias se cargará aquí -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-lg-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-chart-bar me-2"></i>
+                                Estadísticas Descriptivas
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="descriptiveStats">
+                                <!-- Estadísticas descriptivas se cargarán aquí -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Detección de Anomalías
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="anomalyDetection">
+                                <!-- Detección de anomalías se cargará aquí -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+        <!-- Generador de Reportes Section -->
+        <section id="reports-section" class="py-5" style="display: none;" data-lazy-load="reports">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header text-center" style="background: linear-gradient(135deg, #2d5016 0%, #4a7c59 100%);">
+                                <h5 class="mb-0 text-white">
+                                    <i class="fas fa-file-alt me-2"></i>
+                                    Generador de Reportes Ejecutivos
+                                </h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <p class="text-muted mb-4">Crea un reporte ejecutivo completo con análisis visuales y métricas clave del sistema</p>
+                                
+                                <div class="mb-3">
+                                    <label for="simpleReportTitle" class="form-label">Título del Reporte</label>
+                                    <input type="text" class="form-control" id="simpleReportTitle" placeholder="Reporte Ejecutivo de Análisis" value="Reporte Ejecutivo de Análisis">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Tipo de Reporte</label>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="reportType" id="currentChartReport" value="current" checked>
+                                                <label class="form-check-label" for="currentChartReport">
+                                                    <strong>Gráfico Actual</strong><br>
+                                                    <small class="text-muted">Solo el gráfico seleccionado</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="reportType" id="allChartsReport" value="all">
+                                                <label class="form-check-label" for="allChartsReport">
+                                                    <strong>Análisis Completo</strong><br>
+                                                    <small class="text-muted">Todos los gráficos disponibles</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <button type="button" class="btn btn-primary btn-lg" id="generateSimpleReportBtn">
+                                        <i class="fas fa-file-pdf me-2"></i>Generar Reporte Ejecutivo
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    <!-- Modal para guardar análisis -->
+    <div class="modal fade" id="saveAnalysisModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Guardar Análisis</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="saveAnalysisForm">
+                        <div class="mb-3">
+                            <label for="analysisName" class="form-label">Nombre del Análisis</label>
+                            <input type="text" class="form-control" id="analysisName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="analysisDescription" class="form-label">Descripción (opcional)</label>
+                            <textarea class="form-control" id="analysisDescription" rows="3" placeholder="Describe este análisis..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" id="confirmSaveAnalysis">
+                        <i class="fas fa-save me-2"></i>Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center mb-2">
+                        <img src="{{ url_for('static', filename='images/asapalsa.png') }}" alt="ASAPALSA Logo" style="height: 30px; width: auto; margin-right: 10px;">
+                        <h5 class="mb-0">ASAPALSA Analytics</h5>
+                    </div>
+                    <p class="mb-0">Sistema de análisis de datos agroindustriales</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <div class="d-flex align-items-center justify-content-end gap-3">
+                        <button class="btn btn-outline-info btn-sm" id="clearCacheBtn" title="Limpiar caché">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                        <button class="btn btn-outline-warning btn-sm" id="getCacheStatsBtn" title="Estadísticas de caché">
+                            <i class="fas fa-chart-bar"></i>
+                        </button>
+                        <p class="mb-0">
+                            <i class="fas fa-code me-2"></i>
+                            Desarrollado por Leonel Villanueva y Arnold Suate
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
