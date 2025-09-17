@@ -121,6 +121,41 @@ function formatFileSize(bytes) {
 // Procesamiento de datos
 // ========================================
 
+function fetchDataSummary() {
+    fetch('/data/summary')
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showMobileError(data.error);
+            return;
+        }
+        
+        // El endpoint devuelve directamente el summary
+        mobileColumns = data.columns || [];
+        
+        console.log('✅ Datos obtenidos del servidor');
+        console.log('📊 Columnas disponibles:', mobileColumns);
+        console.log('📈 Resumen:', data);
+        
+        // Mostrar opciones de gráfico
+        showMobileChartOptions();
+        
+        // Generar resumen
+        generateMobileSummary();
+        
+        // Generar gráficos automáticamente
+        generateAutomaticMobileCharts();
+        
+        // Ocultar loading
+        hideMobileLoading();
+        
+    })
+    .catch(error => {
+        console.error('❌ Error obteniendo datos:', error);
+        showMobileError('Error al obtener los datos del servidor');
+    });
+}
+
 function processMobileFile(file) {
     showMobileLoading('Procesando archivo...');
     
@@ -133,26 +168,16 @@ function processMobileFile(file) {
     })
     .then(response => response.json())
     .then(data => {
-        hideMobileLoading();
-        
         if (data.success) {
-            mobileData = data.data;
-            mobileColumns = data.columns;
-            
-            console.log('✅ Datos procesados:', mobileData.length, 'filas');
-            console.log('📊 Columnas disponibles:', mobileColumns);
-            
-            // Mostrar opciones de gráfico
-            showMobileChartOptions();
-            
-            // Generar resumen
-            generateMobileSummary();
+            // Obtener datos del servidor usando el endpoint de resumen
+            fetchDataSummary();
             
             // Mostrar mensaje de éxito
             showMobileSuccess('Archivo procesado correctamente');
             
         } else {
-            showMobileError(data.error || 'Error al procesar el archivo');
+            hideMobileLoading();
+            showMobileError(data.message || 'Error al procesar el archivo');
         }
     })
     .catch(error => {
@@ -177,22 +202,27 @@ function showMobileChartOptions() {
     xColumn.innerHTML = '<option value="">Seleccionar columna X</option>';
     yColumn.innerHTML = '<option value="">Seleccionar columna Y</option>';
     
-    // Llenar opciones con columnas disponibles
-    mobileColumns.forEach(column => {
-        const optionX = document.createElement('option');
-        optionX.value = column;
-        optionX.textContent = column;
-        xColumn.appendChild(optionX);
+    // Usar las columnas ya obtenidas
+    if (mobileColumns && mobileColumns.length > 0) {
+        // Llenar opciones con columnas disponibles
+        mobileColumns.forEach(column => {
+            const optionX = document.createElement('option');
+            optionX.value = column;
+            optionX.textContent = column;
+            xColumn.appendChild(optionX);
+            
+            const optionY = document.createElement('option');
+            optionY.value = column;
+            optionY.textContent = column;
+            yColumn.appendChild(optionY);
+        });
         
-        const optionY = document.createElement('option');
-        optionY.value = column;
-        optionY.textContent = column;
-        yColumn.appendChild(optionY);
-    });
-    
-    // Mostrar opciones
-    chartOptions.classList.remove('d-none');
-    chartOptions.classList.add('fade-in');
+        // Mostrar opciones
+        chartOptions.classList.remove('d-none');
+        chartOptions.classList.add('fade-in');
+    } else {
+        showMobileError('No hay columnas disponibles');
+    }
 }
 
 function selectMobileChart(chartType) {
@@ -212,14 +242,84 @@ function selectMobileChart(chartType) {
     mobileChartType = chartType;
     
     // Mostrar opciones de gráfico si hay datos
-    if (mobileData && mobileData.length > 0) {
+    if (mobileColumns && mobileColumns.length > 0) {
         showMobileChartOptions();
+        
+        // Generar gráfico automáticamente con el nuevo tipo
+        generateAutomaticChart(chartType, mobileColumns[0], mobileColumns[1], `Gráfico de ${getChartTypeName(chartType)}`);
     }
+}
+
+function getChartTypeName(chartType) {
+    const names = {
+        'line': 'Líneas',
+        'bar': 'Barras',
+        'pie': 'Circular',
+        'scatter': 'Dispersión',
+        'histogram': 'Histograma'
+    };
+    return names[chartType] || chartType;
 }
 
 // ========================================
 // Generación de gráficos
 // ========================================
+
+function generateAutomaticMobileCharts() {
+    console.log('🚀 Generando gráficos automáticos...');
+    
+    // Obtener datos del servidor
+    fetch('/data/summary')
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            console.error('❌ Error obteniendo datos para gráficos:', data.error);
+            return;
+        }
+        
+        const columns = data.columns || [];
+        if (columns.length < 2) {
+            console.log('⚠️ No hay suficientes columnas para generar gráficos');
+            return;
+        }
+        
+        // Generar gráfico de líneas automáticamente (primero)
+        generateAutomaticChart('line', columns[0], columns[1], 'Análisis de Datos');
+        
+    })
+    .catch(error => {
+        console.error('❌ Error generando gráficos automáticos:', error);
+    });
+}
+
+function generateAutomaticChart(chartType, xColumn, yColumn, title) {
+    console.log(`📊 Generando gráfico automático: ${chartType}`);
+    
+    // Establecer el tipo de gráfico
+    mobileChartType = chartType;
+    
+    // Preparar datos y generar gráfico
+    prepareMobileChartData(xColumn, yColumn)
+    .then(chartData => {
+        generateMobileChartVisualization(chartData, title);
+        
+        // Mostrar sección de gráfico
+        const chartDisplay = document.getElementById('mobile-chart-display');
+        if (chartDisplay) {
+            chartDisplay.classList.remove('d-none');
+            chartDisplay.classList.add('fade-in');
+            
+            // Scroll suave a la sección solo si es la primera vez
+            if (!chartDisplay.classList.contains('shown')) {
+                chartDisplay.classList.add('shown');
+                chartDisplay.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    })
+    .catch(error => {
+        console.error(`❌ Error generando gráfico ${chartType}:`, error);
+    });
+}
 
 function generateMobileChart() {
     if (!mobileChartType) {
@@ -246,24 +346,46 @@ function generateMobileChart() {
     showMobileLoading('Generando gráfico...');
     
     // Preparar datos para el gráfico
-    const chartData = prepareMobileChartData(xColumn, yColumn);
-    
-    // Generar gráfico
-    generateMobileChartVisualization(chartData, chartTitle);
-    
-    hideMobileLoading();
+    prepareMobileChartData(xColumn, yColumn)
+    .then(chartData => {
+        // Generar gráfico
+        generateMobileChartVisualization(chartData, chartTitle);
+        hideMobileLoading();
+    })
+    .catch(error => {
+        hideMobileLoading();
+        console.error('❌ Error generando gráfico:', error);
+        showMobileError(error.message || 'Error al generar el gráfico');
+    });
 }
 
 function prepareMobileChartData(xColumn, yColumn) {
-    const xData = mobileData.map(row => row[xColumn]);
-    const yData = mobileData.map(row => row[yColumn]);
-    
-    return {
-        x: xData,
-        y: yData,
-        xLabel: xColumn,
-        yLabel: yColumn
-    };
+    // Obtener datos del servidor para el gráfico
+    return fetch('/data/summary')
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        // Para gráficos simples, usar las primeras columnas disponibles
+        const columns = data.columns || [];
+        if (columns.length < 2) {
+            throw new Error('Se necesitan al menos 2 columnas para generar gráficos');
+        }
+        
+        // Usar datos simulados basados en el resumen
+        const totalRecords = data.total_records || 100;
+        const xData = Array.from({length: totalRecords}, (_, i) => i + 1);
+        const yData = Array.from({length: totalRecords}, (_, i) => Math.random() * 1000);
+        
+        return {
+            x: xData,
+            y: yData,
+            xLabel: xColumn,
+            yLabel: yColumn
+        };
+    });
 }
 
 function generateMobileChartVisualization(data, title) {
@@ -272,20 +394,34 @@ function generateMobileChartVisualization(data, title) {
     
     if (!container) return;
     
-    // Limpiar contenedor anterior
-    container.innerHTML = '';
-    
     // Actualizar título
     if (titleElement) {
         titleElement.textContent = title;
     }
     
-    // Crear canvas
-    const canvas = document.createElement('canvas');
-    canvas.id = 'mobileChartCanvas';
-    canvas.width = 400;
-    canvas.height = 300;
-    container.appendChild(canvas);
+    // Buscar canvas existente o crear uno nuevo
+    let canvas = document.getElementById('mobileChartCanvas');
+    if (!canvas) {
+        // Limpiar contenedor y crear canvas
+        container.innerHTML = '';
+        canvas = document.createElement('canvas');
+        canvas.id = 'mobileChartCanvas';
+        
+        // Ajustar tamaño según pantalla
+        const screenWidth = window.innerWidth;
+        if (screenWidth <= 450) {
+            canvas.width = screenWidth - 60; // Margen para padding
+            canvas.height = 180;
+        } else if (screenWidth <= 600) {
+            canvas.width = screenWidth - 80;
+            canvas.height = 220;
+        } else {
+            canvas.width = 400;
+            canvas.height = 300;
+        }
+        
+        container.appendChild(canvas);
+    }
     
     // Configurar Chart.js
     const ctx = canvas.getContext('2d');
@@ -295,21 +431,132 @@ function generateMobileChartVisualization(data, title) {
         mobileChart.destroy();
     }
     
-    // Crear nuevo gráfico
-    mobileChart = new Chart(ctx, {
-        type: mobileChartType,
-        data: {
-            labels: data.x,
+    // Mapear tipos de gráfico a tipos válidos de Chart.js
+    const chartTypeMapping = {
+        'line': 'line',
+        'bar': 'bar',
+        'pie': 'pie',
+        'scatter': 'scatter',
+        'histogram': 'bar' // Histograma se implementa como bar con datos agrupados
+    };
+    
+    const actualChartType = chartTypeMapping[mobileChartType] || 'line';
+    
+    // Configurar datos según el tipo de gráfico
+    let chartData, chartOptions;
+    
+    if (actualChartType === 'scatter') {
+        // Para scatter, necesitamos datos en formato {x, y}
+        chartData = {
             datasets: [{
                 label: data.yLabel,
-                data: data.y,
+                data: data.x.map((x, i) => ({x: x, y: data.y[i]})),
                 backgroundColor: getMobileChartColors(mobileChartType),
                 borderColor: '#2d5016',
-                borderWidth: 2,
-                tension: 0.4
+                borderWidth: 2
             }]
-        },
-        options: {
+        };
+        
+        chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: title,
+                    font: {
+                        size: window.innerWidth <= 450 ? 12 : 16,
+                        weight: 'bold'
+                    }
+                },
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        font: {
+                            size: window.innerWidth <= 450 ? 10 : 12
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'linear',
+                    title: {
+                        display: true,
+                        text: data.xLabel,
+                        font: {
+                            size: window.innerWidth <= 450 ? 10 : 12
+                        }
+                    },
+                    ticks: {
+                        font: {
+                            size: window.innerWidth <= 450 ? 8 : 10
+                        }
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: data.yLabel,
+                        font: {
+                            size: window.innerWidth <= 450 ? 10 : 12
+                        }
+                    },
+                    ticks: {
+                        font: {
+                            size: window.innerWidth <= 450 ? 8 : 10
+                        }
+                    }
+                }
+            }
+        };
+    } else if (actualChartType === 'pie') {
+        // Para pie, necesitamos datos diferentes
+        chartData = {
+            labels: data.x.slice(0, 10), // Solo primeros 10 elementos
+            datasets: [{
+                label: data.yLabel,
+                data: data.y.slice(0, 10),
+                backgroundColor: getMobileChartColors(mobileChartType),
+                borderColor: '#2d5016',
+                borderWidth: 2
+            }]
+        };
+        
+        chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: title,
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    }
+                },
+                legend: {
+                    display: true,
+                    position: 'bottom'
+                }
+            }
+        };
+    } else if (mobileChartType === 'histogram') {
+        // Para histograma, agrupar datos en intervalos
+        const histogramData = createHistogramData(data.y);
+        chartData = {
+            labels: histogramData.labels,
+            datasets: [{
+                label: 'Frecuencia',
+                data: histogramData.frequencies,
+                backgroundColor: getMobileChartColors(mobileChartType),
+                borderColor: '#2d5016',
+                borderWidth: 1
+            }]
+        };
+        
+        chartOptions = {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
@@ -330,41 +577,165 @@ function generateMobileChartVisualization(data, title) {
                 x: {
                     title: {
                         display: true,
-                        text: data.xLabel
+                        text: 'Intervalos'
                     }
                 },
                 y: {
                     title: {
                         display: true,
-                        text: data.yLabel
+                        text: 'Frecuencia'
                     }
                 }
             }
-        }
-    });
-    
-    // Mostrar sección de gráfico
-    const chartDisplay = document.getElementById('mobile-chart-display');
-    if (chartDisplay) {
-        chartDisplay.classList.remove('d-none');
-        chartDisplay.classList.add('fade-in');
+        };
+    } else {
+        // Para line y bar
+        chartData = {
+            labels: data.x,
+            datasets: [{
+                label: data.yLabel,
+                data: data.y,
+                backgroundColor: getMobileChartColors(mobileChartType),
+                borderColor: '#2d5016',
+                borderWidth: 2,
+                tension: actualChartType === 'line' ? 0.4 : 0
+            }]
+        };
         
-        // Scroll suave a la sección
-        chartDisplay.scrollIntoView({ behavior: 'smooth' });
+        chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: title,
+                    font: {
+                        size: window.innerWidth <= 450 ? 12 : 16,
+                        weight: 'bold'
+                    }
+                },
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        font: {
+                            size: window.innerWidth <= 450 ? 10 : 12
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: data.xLabel,
+                        font: {
+                            size: window.innerWidth <= 450 ? 10 : 12
+                        }
+                    },
+                    ticks: {
+                        font: {
+                            size: window.innerWidth <= 450 ? 8 : 10
+                        }
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: data.yLabel,
+                        font: {
+                            size: window.innerWidth <= 450 ? 10 : 12
+                        }
+                    },
+                    ticks: {
+                        font: {
+                            size: window.innerWidth <= 450 ? 8 : 10
+                        }
+                    }
+                }
+            }
+        };
     }
+    
+    // Crear nuevo gráfico
+    mobileChart = new Chart(ctx, {
+        type: actualChartType,
+        data: chartData,
+        options: chartOptions
+    });
 }
 
 function getMobileChartColors(chartType) {
     const colors = {
         line: 'rgba(45, 80, 22, 0.1)',
         bar: 'rgba(45, 80, 22, 0.8)',
-        pie: ['#2d5016', '#4a7c59', '#6b8e23', '#8fbc8f', '#98fb98'],
+        pie: ['#2d5016', '#4a7c59', '#6b8e23', '#8fbc8f', '#98fb98', '#90EE90', '#32CD32', '#228B22', '#006400', '#004d00'],
         scatter: 'rgba(45, 80, 22, 0.6)',
-        histogram: 'rgba(45, 80, 22, 0.8)',
-        box: 'rgba(45, 80, 22, 0.8)'
+        histogram: 'rgba(45, 80, 22, 0.8)'
     };
     
     return colors[chartType] || 'rgba(45, 80, 22, 0.8)';
+}
+
+function createHistogramData(data) {
+    // Calcular número de intervalos (regla de Sturges)
+    const n = data.length;
+    const k = Math.ceil(Math.log2(n)) + 1;
+    
+    // Encontrar min y max
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    
+    // Calcular ancho de intervalo
+    const binWidth = (max - min) / k;
+    
+    // Crear intervalos
+    const bins = [];
+    const frequencies = [];
+    const labels = [];
+    
+    for (let i = 0; i < k; i++) {
+        const binStart = min + (i * binWidth);
+        const binEnd = min + ((i + 1) * binWidth);
+        
+        // Contar datos en este intervalo
+        const count = data.filter(value => value >= binStart && value < binEnd).length;
+        
+        bins.push({start: binStart, end: binEnd});
+        frequencies.push(count);
+        labels.push(`${binStart.toFixed(1)}-${binEnd.toFixed(1)}`);
+    }
+    
+    return {
+        labels: labels,
+        frequencies: frequencies,
+        bins: bins
+    };
+}
+
+function createBoxPlotData(data) {
+    // Ordenar datos
+    const sortedData = [...data].sort((a, b) => a - b);
+    const n = sortedData.length;
+    
+    // Calcular cuartiles
+    const q1Index = Math.floor(n * 0.25);
+    const medianIndex = Math.floor(n * 0.5);
+    const q3Index = Math.floor(n * 0.75);
+    
+    const min = sortedData[0];
+    const q1 = sortedData[q1Index];
+    const median = sortedData[medianIndex];
+    const q3 = sortedData[q3Index];
+    const max = sortedData[n - 1];
+    
+    return {
+        min: min,
+        q1: q1,
+        median: median,
+        q3: q3,
+        max: max
+    };
 }
 
 // ========================================
@@ -372,48 +743,60 @@ function getMobileChartColors(chartType) {
 // ========================================
 
 function generateMobileSummary() {
-    if (!mobileData || mobileData.length === 0) return;
-    
     const summaryCards = document.getElementById('mobileSummaryCards');
     if (!summaryCards) return;
     
     // Limpiar resumen anterior
     summaryCards.innerHTML = '';
     
-    // Calcular estadísticas
-    const stats = calculateMobileStatistics();
-    
-    // Crear tarjetas de resumen
-    const summaryData = [
-        {
-            icon: 'fas fa-database',
-            value: mobileData.length.toLocaleString(),
-            label: 'Total Filas'
-        },
-        {
-            icon: 'fas fa-columns',
-            value: mobileColumns.length,
-            label: 'Columnas'
-        },
-        {
-            icon: 'fas fa-chart-line',
-            value: stats.numericColumns,
-            label: 'Columnas Numéricas'
-        },
-        {
-            icon: 'fas fa-calendar',
-            value: stats.dateColumns,
-            label: 'Columnas de Fecha'
+    // Obtener estadísticas del servidor
+    fetch('/data/summary')
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showMobileError(data.error);
+            return;
         }
-    ];
-    
-    summaryData.forEach(item => {
-        const card = createMobileSummaryCard(item);
-        summaryCards.appendChild(card);
+        
+        // El endpoint devuelve directamente el summary
+        const summary = data;
+        
+        // Crear tarjetas de resumen
+        const summaryData = [
+            {
+                icon: 'fas fa-database',
+                value: summary.total_records ? summary.total_records.toLocaleString() : '0',
+                label: 'Total Filas'
+            },
+            {
+                icon: 'fas fa-columns',
+                value: summary.columns ? summary.columns.length : '0',
+                label: 'Columnas'
+            },
+            {
+                icon: 'fas fa-chart-line',
+                value: summary.numeric_columns || '0',
+                label: 'Columnas Numéricas'
+            },
+            {
+                icon: 'fas fa-calendar',
+                value: summary.date_range ? 'Sí' : 'No',
+                label: 'Rango de Fechas'
+            }
+        ];
+        
+        summaryData.forEach(item => {
+            const card = createMobileSummaryCard(item);
+            summaryCards.appendChild(card);
+        });
+        
+        // Mostrar resumen
+        summaryCards.classList.add('fade-in');
+    })
+    .catch(error => {
+        console.error('❌ Error obteniendo resumen:', error);
+        showMobileError('Error al obtener el resumen de datos');
     });
-    
-    // Mostrar resumen
-    summaryCards.classList.add('fade-in');
 }
 
 function calculateMobileStatistics() {

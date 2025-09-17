@@ -469,6 +469,18 @@ body {
     border: 1px solid var(--gray-200);
 }
 
+/* Optimización para pantallas muy pequeñas */
+@media (max-width: 450px) {
+    .mobile-chart-container {
+        min-height: 200px;
+        padding: 0.5rem;
+    }
+    
+    .mobile-chart-container canvas {
+        max-height: 180px !important;
+    }
+}
+
 /* ========================================
    Mobile Summary Cards
    ======================================== */
@@ -586,6 +598,54 @@ body {
     
     .mobile-section {
         padding: 1.5rem 0.75rem;
+    }
+}
+
+/* Optimización para pantallas muy pequeñas (menos de 450px) */
+@media (max-width: 450px) {
+    .mobile-chart-buttons {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .mobile-chart-btn {
+        min-height: 60px;
+        padding: 0.5rem 0.25rem;
+        font-size: 0.7rem;
+    }
+    
+    .mobile-chart-btn i {
+        font-size: 1rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .mobile-chart-btn span {
+        font-size: 0.7rem;
+    }
+    
+    .mobile-card {
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    .mobile-section {
+        padding: 1rem 0.5rem;
+    }
+    
+    .mobile-summary-cards {
+        gap: 0.5rem;
+    }
+    
+    .mobile-summary-card {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .mobile-summary-card .value {
+        font-size: 1rem;
+    }
+    
+    .mobile-summary-card .label {
+        font-size: 0.65rem;
     }
 }
 
