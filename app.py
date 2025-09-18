@@ -678,24 +678,49 @@ def process_asapalsa_format(df):
         # Extraer tipo de movimiento de la descripción manteniendo nombres originales importantes
         df['TipoMovimiento'] = df['DESCRIPCION'].str.extract(r'\d*\s*(.*)', expand=False).str.strip()
         
-        # Normalizar solo variaciones menores manteniendo nombres originales importantes
-        df['TipoMovimiento'] = df['TipoMovimiento'].replace({
-            'Fruta Recibida': 'Fruta Recibida',
-            'fruta recibida': 'Fruta Recibida',
-            'Fruta Proyectada': 'Fruta Proyectada', 
-            'fruta proyectada': 'Fruta Proyectada',
-            'fruta proyectada': 'Fruta Proyectada',
-            'Proyeccion Compra de Fruta Ajustada': 'Proyeccion Compra de Fruta Ajustada',
-            'proyeccion compra de fruta ajustada': 'Proyeccion Compra de Fruta Ajustada',
-            # Mantener variaciones con años
-            'fruta proyectada 2019': 'Fruta Proyectada',
-            'fruta proyectada 2020': 'Fruta Proyectada',
-            'fruta proyectada 2021': 'Fruta Proyectada',
-            'fruta proyectada 2022': 'Fruta Proyectada',
-            'fruta proyectada 2023': 'Fruta Proyectada',
-            'fruta proyectada 2024': 'Fruta Proyectada',
-            'fruta proyectada 2025': 'Fruta Proyectada'
-        })
+        # Normalizar nombres de columnas para evitar duplicados por diferencias de mayúsculas/minúsculas
+        def normalize_movement_name(name):
+            """Normaliza el nombre del movimiento para evitar duplicados"""
+            if pd.isna(name) or name == '':
+                return name
+            
+            # Convertir a minúsculas para comparación
+            name_lower = name.lower().strip()
+            
+            # Mapeo de normalización - ordenado por especificidad
+            if 'proyeccion compra de fruta ajustada' in name_lower:
+                return 'Proyeccion Compra de Fruta Ajustada'
+            elif 'fruta recibida' in name_lower or 'recibida' in name_lower:
+                return 'Fruta Recibida'
+            elif 'fruta proyectada' in name_lower or 'proyectada' in name_lower:
+                return 'Fruta Proyectada'
+            elif 'fruta procesada' in name_lower or 'procesada' in name_lower:
+                return 'Fruta Procesada'
+            elif 'fruta exportada' in name_lower or 'exportada' in name_lower:
+                return 'Fruta Exportada'
+            elif 'fruta importada' in name_lower or 'importada' in name_lower:
+                return 'Fruta Importada'
+            elif 'fruta vendida' in name_lower or 'vendida' in name_lower:
+                return 'Fruta Vendida'
+            elif 'fruta comprada' in name_lower or 'comprada' in name_lower:
+                return 'Fruta Comprada'
+            else:
+                # Si no coincide con ningún patrón conocido, usar el nombre original con formato estándar
+                return name.title()
+        
+        # Aplicar normalización
+        df['TipoMovimiento'] = df['TipoMovimiento'].apply(normalize_movement_name)
+        
+        print(f"🔍 Tipos de movimiento únicos después de normalización: {df['TipoMovimiento'].unique()}")
+        
+        # Mostrar ejemplos de normalización para debugging
+        original_types = df['DESCRIPCION'].str.extract(r'\d*\s*(.*)', expand=False).str.strip().unique()
+        print(f"🔍 Ejemplos de normalización:")
+        for orig_type in original_types[:5]:  # Mostrar solo los primeros 5
+            if pd.notna(orig_type) and orig_type != '':
+                normalized = normalize_movement_name(orig_type)
+                if orig_type != normalized:
+                    print(f"   '{orig_type}' → '{normalized}'")
         
         # Mapeo de nombres de mes a número
         meses_map = {
@@ -729,6 +754,9 @@ def process_asapalsa_format(df):
             fill_value=0
         )
         
+        # Normalizar nombres de columnas después del pivot para asegurar consistencia
+        df_pivot.columns = [normalize_movement_name(str(col)) for col in df_pivot.columns]
+        
         # Mantener el índice de fecha para el resumen
         # No resetear el índice para preservar las fechas
         
@@ -738,6 +766,7 @@ def process_asapalsa_format(df):
         original_data = df
         
         print(f"✅ ASAPALSA procesado: {len(df)} filas, {len(df_clean['TipoMovimiento'].unique())} tipos de movimiento")
+        print(f"📊 Columnas finales después de normalización: {list(df_pivot.columns)}")
         return True, f"Archivo procesado correctamente. {len(df)} filas, {len(df.columns)} columnas"
         
     except Exception as e:
