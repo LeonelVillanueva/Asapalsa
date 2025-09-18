@@ -55,6 +55,29 @@ class ASAPALSAnalytics {
             this.showIntelligentAnalysisModal();
         });
 
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            handleNavbarScroll();
+        });
+
+        // Dropdown z-index fix
+        document.addEventListener('DOMContentLoaded', () => {
+            const dropdownToggle = document.getElementById('analyticsDropdown');
+            const dropdownMenu = dropdownToggle?.nextElementSibling;
+            
+            if (dropdownToggle && dropdownMenu) {
+                dropdownToggle.addEventListener('show.bs.dropdown', () => {
+                    dropdownMenu.style.zIndex = '99999';
+                    dropdownMenu.style.position = 'absolute';
+                });
+                
+                dropdownToggle.addEventListener('shown.bs.dropdown', () => {
+                    dropdownMenu.style.zIndex = '99999';
+                    dropdownMenu.style.position = 'absolute';
+                });
+            }
+        });
+
         // Confirm save analysis
         document.getElementById('confirmSaveAnalysis').addEventListener('click', () => {
             this.saveCurrentAnalysis();
@@ -2083,6 +2106,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Make app available globally
     window.app = app;
 });
+
+// Navbar scroll effect
+function handleNavbarScroll() {
+    const navbar = document.querySelector('.navbar');
+    if (window.scrollY > 50) {
+        navbar.classList.add('scrolled');
+    } else {
+        navbar.classList.remove('scrolled');
+    }
+}
 
 // Additional utility functions
 function formatNumber(num) {
