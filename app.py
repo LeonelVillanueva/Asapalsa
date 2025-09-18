@@ -19,6 +19,8 @@ from functools import lru_cache
 import re
 import google.generativeai as genai
 from dotenv import load_dotenv
+import subprocess
+import tempfile
 
 # Cargar variables de entorno desde .env
 load_dotenv()
@@ -33,7 +35,7 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
 if GEMINI_API_KEY and GEMINI_API_KEY != 'tu_api_key_aqui':
     try:
         genai.configure(api_key=GEMINI_API_KEY)
-        ai_model = genai.GenerativeModel('gemini-pro')
+        ai_model = genai.GenerativeModel('gemini-1.5-flash')
         print("✅ Google Gemini configurado correctamente")
     except Exception as e:
         print(f"⚠️ Error configurando Gemini: {e}")
@@ -260,8 +262,286 @@ def process_file_data(file_path):
         traceback.print_exc()
         return False, f"Error al procesar el archivo: {str(e)}"
 
+def validate_csv_structure(df, file_path):
+    """Valida la estructura y contenido del CSV usando csvkit y pandas"""
+    errors = []
+    warnings = []
+    
+    try:
+        # 1. Validar que no esté vacío
+        if df.empty:
+            errors.append("El archivo CSV está completamente vacío")
+            return errors, warnings
+        
+        # 2. Validar número mínimo de columnas
+        if len(df.columns) < 2:
+            errors.append(f"El archivo debe tener al menos 2 columnas. Encontradas: {len(df.columns)}")
+        
+        # 3. Validar que no todas las filas estén vacías
+        non_empty_rows = df.dropna(how='all')
+        if len(non_empty_rows) == 0:
+            errors.append("Todas las filas del archivo están vacías")
+        
+        # 4. Detectar columnas completamente vacías
+        empty_columns = df.columns[df.isnull().all()].tolist()
+        if empty_columns:
+            warnings.append(f"Columnas completamente vacías detectadas: {empty_columns}")
+        
+        # 5. Detectar filas duplicadas
+        duplicate_rows = df.duplicated().sum()
+        if duplicate_rows > 0:
+            warnings.append(f"Se encontraron {duplicate_rows} filas duplicadas")
+        
+        # 6. Validar tipos de datos en columnas numéricas
+        numeric_columns = df.select_dtypes(include=[np.number]).columns
+        for col in numeric_columns:
+            if df[col].isnull().all():
+                warnings.append(f"Columna numérica '{col}' está completamente vacía")
+            elif df[col].dtype == 'object':
+                # Intentar convertir a numérico
+                non_numeric = pd.to_numeric(df[col], errors='coerce').isnull().sum()
+                if non_numeric > 0:
+                    warnings.append(f"Columna '{col}' tiene {non_numeric} valores no numéricos")
+        
+        # 7. Detectar caracteres especiales problemáticos
+        for col in df.columns:
+            if df[col].dtype == 'object':
+                special_chars = df[col].astype(str).str.contains(r'[^\w\s\-\.\,\;\:\+\-\/]', na=False).sum()
+                if special_chars > 0:
+                    warnings.append(f"Columna '{col}' contiene {special_chars} caracteres especiales")
+        
+        # 8. Validación adicional con csvkit si está disponible
+        try:
+            result = subprocess.run([
+                'csvstat', 
+                '--count',
+                file_path
+            ], capture_output=True, text=True, timeout=10)
+            
+            if result.returncode == 0:
+                warnings.append("Validación adicional con csvkit completada")
+                print("✅ csvstat ejecutado exitosamente")
+            else:
+                print(f"⚠️ csvstat no disponible: {result.stderr}")
+                
+        except (subprocess.TimeoutExpired, FileNotFoundError, Exception) as e:
+            print(f"⚠️ csvstat no disponible: {e}")
+        
+        print(f"✅ Validación completada: {len(errors)} errores, {len(warnings)} advertencias")
+        return errors, warnings
+        
+    except Exception as e:
+        errors.append(f"Error durante la validación: {str(e)}")
+        return errors, warnings
+
+def repair_csv_data(df, errors, warnings):
+    """Intenta reparar automáticamente los errores detectados usando csvkit y pandas"""
+    repaired_df = df.copy()
+    repairs_made = []
+    
+    try:
+        print(f"🔧 Iniciando reparación automática con csvkit...")
+        
+        # 1. Eliminar columnas completamente vacías
+        empty_columns = repaired_df.columns[repaired_df.isnull().all()].tolist()
+        if empty_columns:
+            repaired_df = repaired_df.drop(columns=empty_columns)
+            repairs_made.append(f"Eliminadas {len(empty_columns)} columnas vacías: {empty_columns}")
+        
+        # 2. Eliminar filas completamente vacías
+        initial_rows = len(repaired_df)
+        repaired_df = repaired_df.dropna(how='all')
+        removed_rows = initial_rows - len(repaired_df)
+        if removed_rows > 0:
+            repairs_made.append(f"Eliminadas {removed_rows} filas completamente vacías")
+        
+        # 3. Limpiar nombres de columnas
+        repaired_df.columns = repaired_df.columns.str.strip()
+        repaired_df.columns = repaired_df.columns.str.replace(r'[^\w\s]', '_', regex=True)
+        repairs_made.append("Nombres de columnas limpiados")
+        
+        # 4. Intentar convertir columnas numéricas
+        for col in repaired_df.columns:
+            if repaired_df[col].dtype == 'object':
+                # Intentar convertir a numérico
+                numeric_converted = pd.to_numeric(repaired_df[col], errors='coerce')
+                if not numeric_converted.isnull().all():
+                    repaired_df[col] = numeric_converted
+                    repairs_made.append(f"Columna '{col}' convertida a numérico")
+        
+        # 5. Rellenar valores faltantes con estrategias apropiadas
+        for col in repaired_df.columns:
+            if repaired_df[col].isnull().any():
+                if repaired_df[col].dtype in ['int64', 'float64']:
+                    # Para columnas numéricas, usar la mediana
+                    repaired_df[col] = repaired_df[col].fillna(repaired_df[col].median())
+                    repairs_made.append(f"Valores faltantes en '{col}' rellenados con mediana")
+                else:
+                    # Para columnas de texto, usar el valor más frecuente
+                    most_frequent = repaired_df[col].mode()
+                    if not most_frequent.empty:
+                        repaired_df[col] = repaired_df[col].fillna(most_frequent[0])
+                        repairs_made.append(f"Valores faltantes en '{col}' rellenados con valor más frecuente")
+        
+        # 6. Eliminar filas duplicadas
+        initial_rows = len(repaired_df)
+        repaired_df = repaired_df.drop_duplicates()
+        removed_duplicates = initial_rows - len(repaired_df)
+        if removed_duplicates > 0:
+            repairs_made.append(f"Eliminadas {removed_duplicates} filas duplicadas")
+        
+        print(f"✅ Reparación completada: {len(repairs_made)} reparaciones realizadas")
+        return repaired_df, repairs_made
+        
+    except Exception as e:
+        print(f"❌ Error durante la reparación: {e}")
+        return df, [f"Error durante la reparación: {str(e)}"]
+
+def repair_csv_with_csvkit(file_path):
+    """Repara un CSV usando csvkit para problemas más complejos"""
+    try:
+        print(f"🔧 Iniciando reparación con csvkit para: {file_path}")
+        
+        # Crear archivo temporal para la reparación
+        with tempfile.NamedTemporaryFile(mode='w+', suffix='.csv', delete=False) as temp_file:
+            temp_path = temp_file.name
+        
+        repairs_made = []
+        
+        # 1. Usar csvclean para limpiar el archivo
+        try:
+            result = subprocess.run([
+                'csvclean', 
+                '--encoding', 'utf-8',
+                '--output', temp_path,
+                file_path
+            ], capture_output=True, text=True, timeout=30)
+            
+            if result.returncode == 0:
+                repairs_made.append("Archivo limpiado con csvclean")
+                print("✅ csvclean ejecutado exitosamente")
+            else:
+                print(f"⚠️ csvclean falló: {result.stderr}")
+                # Continuar con pandas si csvclean falla
+                return None, ["csvclean no disponible, usando pandas"]
+                
+        except subprocess.TimeoutExpired:
+            print("⏰ csvclean timeout, usando pandas")
+            return None, ["csvclean timeout, usando pandas"]
+        except FileNotFoundError:
+            print("⚠️ csvclean no encontrado, usando pandas")
+            return None, ["csvclean no disponible, usando pandas"]
+        except Exception as e:
+            print(f"❌ Error con csvclean: {e}")
+            return None, [f"Error con csvclean: {str(e)}"]
+        
+        # 2. Leer el archivo reparado
+        try:
+            repaired_df = pd.read_csv(temp_path, encoding='utf-8')
+            repairs_made.append(f"Archivo reparado leído exitosamente: {len(repaired_df)} filas")
+            
+            # 3. Validar el resultado
+            if len(repaired_df) == 0:
+                repairs_made.append("⚠️ Archivo reparado está vacío")
+                return None, repairs_made
+            
+            # 4. Limpiar archivo temporal
+            os.unlink(temp_path)
+            
+            print(f"✅ Reparación con csvkit completada: {len(repairs_made)} reparaciones")
+            return repaired_df, repairs_made
+            
+        except Exception as e:
+            print(f"❌ Error leyendo archivo reparado: {e}")
+            # Limpiar archivo temporal en caso de error
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+            return None, [f"Error leyendo archivo reparado: {str(e)}"]
+            
+    except Exception as e:
+        print(f"❌ Error general en repair_csv_with_csvkit: {e}")
+        return None, [f"Error general: {str(e)}"]
+
+def diagnose_csv_with_csvkit(file_path):
+    """Diagnostica un CSV usando csvkit para obtener información detallada"""
+    try:
+        print(f"🔍 Iniciando diagnóstico con csvkit para: {file_path}")
+        
+        diagnosis = {
+            'csvkit_available': False,
+            'file_info': {},
+            'statistics': {},
+            'warnings': []
+        }
+        
+        # 1. Verificar si csvkit está disponible
+        try:
+            result = subprocess.run(['csvstat', '--version'], 
+                                  capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                diagnosis['csvkit_available'] = True
+                diagnosis['csvkit_version'] = result.stdout.strip()
+                print("✅ csvkit disponible")
+            else:
+                print("⚠️ csvkit no disponible")
+                return diagnosis
+        except (subprocess.TimeoutExpired, FileNotFoundError, Exception) as e:
+            print(f"⚠️ csvkit no disponible: {e}")
+            return diagnosis
+        
+        # 2. Obtener información básica del archivo
+        try:
+            result = subprocess.run([
+                'csvstat', 
+                '--count',
+                '--columns',
+                file_path
+            ], capture_output=True, text=True, timeout=10)
+            
+            if result.returncode == 0:
+                diagnosis['file_info'] = {
+                    'row_count': result.stdout.strip(),
+                    'columns_detected': True
+                }
+                print("✅ Información básica obtenida")
+            else:
+                diagnosis['warnings'].append(f"Error obteniendo información básica: {result.stderr}")
+        except Exception as e:
+            diagnosis['warnings'].append(f"Error en diagnóstico básico: {str(e)}")
+        
+        # 3. Obtener estadísticas detalladas
+        try:
+            result = subprocess.run([
+                'csvstat', 
+                '--freq',
+                '--len',
+                file_path
+            ], capture_output=True, text=True, timeout=15)
+            
+            if result.returncode == 0:
+                diagnosis['statistics'] = {
+                    'frequency_analysis': result.stdout.strip(),
+                    'length_analysis': True
+                }
+                print("✅ Estadísticas detalladas obtenidas")
+            else:
+                diagnosis['warnings'].append(f"Error obteniendo estadísticas: {result.stderr}")
+        except Exception as e:
+            diagnosis['warnings'].append(f"Error en estadísticas: {str(e)}")
+        
+        print(f"✅ Diagnóstico con csvkit completado")
+        return diagnosis
+        
+    except Exception as e:
+        print(f"❌ Error general en diagnose_csv_with_csvkit: {e}")
+        return {
+            'csvkit_available': False,
+            'error': str(e),
+            'warnings': [f"Error general: {str(e)}"]
+        }
+
 def process_csv_file(file_path):
-    """Procesa archivos CSV con el formato original"""
+    """Procesa archivos CSV con el formato original y reparación automática"""
     global current_data, processed_data, original_data
     
     try:
@@ -275,7 +555,8 @@ def process_csv_file(file_path):
         for encoding in encodings:
             for sep in separators:
                 try:
-                    df = pd.read_csv(file_path, sep=sep, encoding=encoding)
+                    # Leer CSV con configuración específica para manejar comas en números
+                    df = pd.read_csv(file_path, sep=sep, encoding=encoding, thousands=',', decimal='.')
                     if len(df.columns) > 1:  # Si tiene más de una columna, probablemente es correcto
                         print(f"✅ CSV leído con separador '{sep}' y encoding '{encoding}'")
                         break
@@ -287,6 +568,56 @@ def process_csv_file(file_path):
         
         if df is None:
             return False, "No se pudo leer el archivo CSV con ningún separador o encoding"
+        
+        # Limpiar datos: remover espacios en blanco y convertir tipos de datos
+        df = df.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
+        
+        # Intentar convertir columnas numéricas que puedan tener comas
+        for col in df.columns:
+            if df[col].dtype == 'object':
+                try:
+                    # Intentar convertir a numérico, manejando comas como separadores de miles
+                    numeric_series = pd.to_numeric(df[col].astype(str).str.replace(',', ''), errors='coerce')
+                    # Solo reemplazar si la conversión fue exitosa para la mayoría de valores
+                    if not numeric_series.isna().all():
+                        df[col] = numeric_series
+                except Exception as e:
+                    print(f"⚠️ No se pudo convertir columna '{col}' a numérico: {e}")
+                    pass
+        
+        # Validar estructura del CSV
+        errors, warnings = validate_csv_structure(df, file_path)
+        
+        # Si hay errores críticos, intentar reparar
+        if errors:
+            print(f"⚠️ Errores críticos detectados: {errors}")
+            repaired_df, repairs_made = repair_csv_data(df, errors, warnings)
+            
+            # Validar nuevamente después de la reparación
+            new_errors, new_warnings = validate_csv_structure(repaired_df, file_path)
+            
+            if new_errors:
+                error_msg = f"El archivo CSV tiene errores que no se pudieron reparar automáticamente:\n"
+                error_msg += "\n".join(f"• {error}" for error in new_errors)
+                if repairs_made:
+                    error_msg += f"\n\nReparaciones intentadas:\n"
+                    error_msg += "\n".join(f"• {repair}" for repair in repairs_made)
+                return False, error_msg
+            else:
+                df = repaired_df
+                repair_msg = f"Archivo reparado automáticamente:\n"
+                repair_msg += "\n".join(f"• {repair}" for repair in repairs_made)
+                if new_warnings:
+                    repair_msg += f"\n\nAdvertencias restantes:\n"
+                    repair_msg += "\n".join(f"• {warning}" for warning in new_warnings)
+                print(f"✅ {repair_msg}")
+        elif warnings:
+            print(f"⚠️ Advertencias detectadas: {warnings}")
+            # Aplicar reparaciones menores para advertencias
+            repaired_df, repairs_made = repair_csv_data(df, [], warnings)
+            if repairs_made:
+                df = repaired_df
+                print(f"✅ Reparaciones menores aplicadas: {repairs_made}")
         
         # Limpiar nombres de columnas
         df.columns = df.columns.str.strip()
@@ -322,7 +653,17 @@ def process_asapalsa_format(df):
         print(f"🔍 Tipos de datos: {df.dtypes.to_dict()}")
         
         # Verificar que las columnas necesarias existen
-        required_columns = ['DESCRIPCION', 'T.M.', 'MES']
+        # Buscar columna T.M. que puede haberse convertido a T_M_ durante la limpieza
+        tm_column = None
+        for col in df.columns:
+            if 'T.M.' in col or 'T_M_' in col:
+                tm_column = col
+                break
+        
+        if tm_column is None:
+            return False, f"Columna T.M. no encontrada. Columnas disponibles: {list(df.columns)}"
+        
+        required_columns = ['DESCRIPCION', 'MES']
         missing_columns = [col for col in required_columns if col not in df.columns]
         
         if missing_columns:
@@ -334,23 +675,26 @@ def process_asapalsa_format(df):
             # Usar año actual como fallback
             df['year'] = pd.Timestamp.now().year
         
-        # Extraer tipo de movimiento de la descripción
-        df['TipoMovimiento'] = df['DESCRIPCION'].str.extract(r'\d*\s*(.*)', expand=False).str.strip().str.lower()
+        # Extraer tipo de movimiento de la descripción manteniendo nombres originales importantes
+        df['TipoMovimiento'] = df['DESCRIPCION'].str.extract(r'\d*\s*(.*)', expand=False).str.strip()
         
-        # Arreglar nombres inconsistentes
+        # Normalizar solo variaciones menores manteniendo nombres originales importantes
         df['TipoMovimiento'] = df['TipoMovimiento'].replace({
-            'fruta recibida': 'fruta recibida',
-            'fruta proyectada': 'fruta proyectada',
-            'proyeccion compra de fruta ajustada': 'proyeccion ajustada',
-            'proyeccion compra de fruta ajustada': 'proyeccion ajustada',
-            'proyeccion compra de fruta ajustada': 'proyeccion ajustada',
-            'fruta proyectada 2019': 'fruta proyectada',
-            'fruta proyectada 2020': 'fruta proyectada',
-            'fruta proyectada 2021': 'fruta proyectada',
-            'fruta proyectada 2022': 'fruta proyectada',
-            'fruta proyectada 2023': 'fruta proyectada',
-            'fruta proyectada 2024': 'fruta proyectada',
-            'fruta proyectada 2025': 'fruta proyectada'
+            'Fruta Recibida': 'Fruta Recibida',
+            'fruta recibida': 'Fruta Recibida',
+            'Fruta Proyectada': 'Fruta Proyectada', 
+            'fruta proyectada': 'Fruta Proyectada',
+            'fruta proyectada': 'Fruta Proyectada',
+            'Proyeccion Compra de Fruta Ajustada': 'Proyeccion Compra de Fruta Ajustada',
+            'proyeccion compra de fruta ajustada': 'Proyeccion Compra de Fruta Ajustada',
+            # Mantener variaciones con años
+            'fruta proyectada 2019': 'Fruta Proyectada',
+            'fruta proyectada 2020': 'Fruta Proyectada',
+            'fruta proyectada 2021': 'Fruta Proyectada',
+            'fruta proyectada 2022': 'Fruta Proyectada',
+            'fruta proyectada 2023': 'Fruta Proyectada',
+            'fruta proyectada 2024': 'Fruta Proyectada',
+            'fruta proyectada 2025': 'Fruta Proyectada'
         })
         
         # Mapeo de nombres de mes a número
@@ -372,16 +716,16 @@ def process_asapalsa_format(df):
         df['Fecha'] = pd.to_datetime(df['year'].astype(str) + '-' + df['MES'] + '-01')
         
         # Limpiar y convertir T.M. a numérico
-        df['T.M.'] = df['T.M.'].replace(',', '', regex=True).astype(float)
+        df[tm_column] = df[tm_column].replace(',', '', regex=True).astype(float)
         
         # Seleccionar solo columnas necesarias
-        df_clean = df[['Fecha', 'TipoMovimiento', 'T.M.']]
+        df_clean = df[['Fecha', 'TipoMovimiento', tm_column]]
         
         # Pivotar datos
         df_pivot = df_clean.pivot_table(
             index='Fecha', 
             columns='TipoMovimiento', 
-            values='T.M.', 
+            values=tm_column, 
             fill_value=0
         )
         
@@ -1036,11 +1380,19 @@ def favicon():
 @app.route('/upload', methods=['POST'])
 def upload_file():
     try:
+        print(f"📤 [Upload] Petición recibida desde: {request.remote_addr}")
+        print(f"📤 [Upload] Headers: {dict(request.headers)}")
+        print(f"📤 [Upload] Archivos en request: {list(request.files.keys())}")
+        
         if 'file' not in request.files:
+            print("📤 [Upload] Error: No se encontró 'file' en request.files")
             return jsonify({'success': False, 'message': 'No se seleccionó ningún archivo'})
         
         file = request.files['file']
+        print(f"📤 [Upload] Archivo recibido: {file.filename}, tamaño: {file.content_length}")
+        
         if file.filename == '':
+            print("📤 [Upload] Error: Nombre de archivo vacío")
             return jsonify({'success': False, 'message': 'No se seleccionó ningún archivo'})
         
         if file and file.filename.lower().endswith('.csv'):
@@ -1062,40 +1414,47 @@ def upload_file():
                     filename = f"{name}_{timestamp}{ext}"
                     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             
-            file.save(file_path)
-            
-            success, message = process_file_data(file_path)
-            
-            if success:
-                # Obtener información del dataset de forma segura
-                try:
-                    info = {
-                        'total_records': len(processed_data) if processed_data is not None else 0,
-                        'date_range': get_date_range(processed_data),
-                        'movement_types': list(processed_data.columns) if processed_data is not None else [],
-                        'total_tonnage': float(processed_data.sum().sum()) if processed_data is not None and not processed_data.empty else 0
-                    }
-                except Exception as e:
-                    print(f"Error obteniendo info del dataset: {e}")
-                    info = {
-                        'total_records': 0,
-                        'date_range': 'N/A',
-                        'movement_types': [],
-                        'total_tonnage': 0
-                    }
-                
-                return jsonify({
-                    'success': True, 
-                    'message': message,
-                    'info': info
-                })
-            else:
-                return jsonify({'success': False, 'message': message})
+        print(f"📤 [Upload] Guardando archivo en: {file_path}")
+        file.save(file_path)
+        print(f"📤 [Upload] Archivo guardado exitosamente")
         
-        return jsonify({'success': False, 'message': 'Formato de archivo no válido. Solo se permiten archivos CSV y XLSX.'})
+        print(f"📤 [Upload] Procesando archivo...")
+        success, message = process_file_data(file_path)
+        print(f"📤 [Upload] Resultado del procesamiento: success={success}, message={message}")
+        
+        if success:
+            # Obtener información del dataset de forma segura
+            try:
+                info = {
+                    'total_records': len(processed_data) if processed_data is not None else 0,
+                    'date_range': get_date_range(processed_data),
+                    'movement_types': list(processed_data.columns) if processed_data is not None else [],
+                    'total_tonnage': float(processed_data.sum().sum()) if processed_data is not None and not processed_data.empty else 0
+                }
+            except Exception as e:
+                print(f"Error obteniendo info del dataset: {e}")
+                info = {
+                    'total_records': 0,
+                    'date_range': 'N/A',
+                    'movement_types': [],
+                    'total_tonnage': 0
+                }
+            
+            response_data = {
+                'success': True, 
+                'message': message,
+                'info': info
+            }
+            print(f"📤 [Upload] Enviando respuesta exitosa: {response_data}")
+            return jsonify(response_data)
+        else:
+            print(f"📤 [Upload] Enviando respuesta de error: {message}")
+            return jsonify({'success': False, 'message': message})
+    
+        return jsonify({'success': False, 'message': 'Formato de archivo no válido. Solo se permiten archivos CSV.'})
         
     except Exception as e:
-        print(f"Error crítico en upload_file: {e}")
+        print(f"📤 [Upload] Error crítico en upload_file: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'message': f'Error interno del servidor: {str(e)}'}), 500
@@ -1151,8 +1510,8 @@ def get_data_summary():
                     'movement_types': len(processed_data.columns),
                     'numeric_columns': len(numeric_cols)
                 }
-        
-        return {'error': 'No hay datos disponibles'}
+        else:
+            return {'error': 'No hay datos disponibles'}
         
     except Exception as e:
         print(f"Error crítico en get_data_summary: {e}")
@@ -2603,11 +2962,294 @@ def export_report():
         return jsonify({'error': f'Error al generar reporte: {str(e)}'}), 500
 
 # Endpoint para análisis inteligente con IA
+@app.route('/api/csv-validation', methods=['POST'])
+def validate_csv_endpoint():
+    """Endpoint para validar un CSV antes de procesarlo"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'message': 'No se seleccionó ningún archivo'})
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'success': False, 'message': 'No se seleccionó ningún archivo'})
+        
+        if not file.filename.lower().endswith('.csv'):
+            return jsonify({'success': False, 'message': 'Solo se admiten archivos CSV'})
+        
+        # Guardar archivo temporalmente
+        filename = secure_filename(file.filename)
+        temp_path = os.path.join(app.config['UPLOAD_FOLDER'], f"temp_{filename}")
+        file.save(temp_path)
+        
+        try:
+            # Intentar leer el CSV
+            df = None
+            encodings = ['utf-8', 'latin1', 'cp1252', 'iso-8859-1']
+            separators = [';', ',', '\t']
+            
+            for encoding in encodings:
+                for sep in separators:
+                    try:
+                        df = pd.read_csv(temp_path, sep=sep, encoding=encoding)
+                        if len(df.columns) > 1:
+                            break
+                    except:
+                        continue
+                if df is not None and len(df.columns) > 1:
+                    break
+            
+            if df is None:
+                return jsonify({
+                    'success': False,
+                    'message': 'Documento dañado - No se pudo leer el archivo',
+                    'can_repair': False
+                })
+            
+            # Validar estructura
+            errors, warnings = validate_csv_structure(df, temp_path)
+            
+            # Si hay errores o muchas advertencias, intentar reparar
+            empty_columns = [col for col in df.columns if df[col].isnull().all()]
+            has_critical_warnings = len(warnings) > 3 or len(empty_columns) > 0
+            
+            if errors or has_critical_warnings:
+                return jsonify({
+                    'success': False,
+                    'message': 'Documento dañado - Iniciando reparación automática',
+                    'can_repair': True,
+                    'errors': errors,
+                    'warnings': warnings,
+                    'columns': list(df.columns),
+                    'rows': len(df),
+                    'empty_columns': empty_columns
+                })
+            
+            # Si solo hay advertencias, aplicar reparaciones menores
+            if warnings:
+                repaired_df, repairs_made = repair_csv_data(df, [], warnings)
+                return jsonify({
+                    'success': True,
+                    'message': 'Archivo procesado con reparaciones menores',
+                    'can_repair': False,
+                    'errors': [],
+                    'warnings': warnings,
+                    'repairs_made': repairs_made,
+                    'columns': list(repaired_df.columns),
+                    'rows': len(repaired_df),
+                    'preview': repaired_df.head(5).to_dict('records') if len(repaired_df) > 0 else []
+                })
+            
+            # Archivo válido sin problemas
+            return jsonify({
+                'success': True,
+                'message': 'Archivo válido',
+                'can_repair': False,
+                'errors': [],
+                'warnings': [],
+                'repairs_made': [],
+                'columns': list(df.columns),
+                'rows': len(df),
+                'preview': df.head(5).to_dict('records') if len(df) > 0 else []
+            })
+            
+        except Exception as e:
+            # Limpiar archivo temporal en caso de error
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            return jsonify({
+                'success': False,
+                'message': 'Documento dañado - Error crítico',
+                'can_repair': False
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Documento dañado - Error interno',
+            'can_repair': False
+        })
+
+@app.route('/api/csv-repair', methods=['POST'])
+def repair_csv_endpoint():
+    """Endpoint para reparar un CSV dañado"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'message': 'No se seleccionó ningún archivo'})
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'success': False, 'message': 'No se seleccionó ningún archivo'})
+        
+        if not file.filename.lower().endswith('.csv'):
+            return jsonify({'success': False, 'message': 'Solo se admiten archivos CSV'})
+        
+        # Guardar archivo temporalmente
+        filename = secure_filename(file.filename)
+        temp_path = os.path.join(app.config['UPLOAD_FOLDER'], f"temp_{filename}")
+        file.save(temp_path)
+        
+        try:
+            # Intentar leer el CSV
+            df = None
+            encodings = ['utf-8', 'latin1', 'cp1252', 'iso-8859-1']
+            separators = [';', ',', '\t']
+            
+            for encoding in encodings:
+                for sep in separators:
+                    try:
+                        df = pd.read_csv(temp_path, sep=sep, encoding=encoding)
+                        if len(df.columns) > 1:
+                            break
+                    except:
+                        continue
+                if df is not None and len(df.columns) > 1:
+                    break
+            
+            if df is None:
+                return jsonify({
+                    'success': False,
+                    'message': 'No se pudo leer el archivo CSV con ningún separador o encoding'
+                })
+            
+            # Validar estructura
+            errors, warnings = validate_csv_structure(df, temp_path)
+            
+            # Detectar columnas vacías
+            empty_columns = [col for col in df.columns if df[col].isnull().all()]
+            
+            # Intentar reparar con csvkit primero, luego pandas
+            repairs_made = []
+            if errors or len(empty_columns) > 0:
+                # Primero intentar con csvkit
+                repaired_df_csvkit, csvkit_repairs = repair_csv_with_csvkit(temp_path)
+                
+                if repaired_df_csvkit is not None:
+                    # csvkit funcionó
+                    df = repaired_df_csvkit
+                    repairs_made.extend(csvkit_repairs)
+                    print("✅ Reparación con csvkit exitosa")
+                else:
+                    # Fallback a pandas
+                    print("⚠️ csvkit falló, usando pandas")
+                    repaired_df, pandas_repairs = repair_csv_data(df, errors, warnings)
+                    repairs_made.extend(pandas_repairs)
+                    
+                    # Eliminar columnas vacías manualmente
+                    if empty_columns:
+                        # Verificar que las columnas existen antes de eliminarlas
+                        existing_empty_columns = [col for col in empty_columns if col in repaired_df.columns]
+                        if existing_empty_columns:
+                            repaired_df = repaired_df.drop(columns=existing_empty_columns)
+                            repairs_made.append(f"Eliminadas {len(existing_empty_columns)} columnas vacías: {existing_empty_columns}")
+                    
+                    new_errors, new_warnings = validate_csv_structure(repaired_df, temp_path)
+                    
+                    if new_errors:
+                        return jsonify({
+                            'success': False,
+                            'message': 'No se pudo reparar el archivo automáticamente',
+                            'errors': new_errors,
+                            'warnings': new_warnings,
+                            'repairs_attempted': repairs_made
+                        })
+                    else:
+                        df = repaired_df
+                        errors = new_errors
+                        warnings = new_warnings
+            
+            # Limpiar archivo temporal
+            os.remove(temp_path)
+            
+            return jsonify({
+                'success': True,
+                'message': 'Archivo reparado exitosamente',
+                'errors': errors,
+                'warnings': warnings,
+                'repairs_made': repairs_made,
+                'columns': list(df.columns),
+                'rows': len(df),
+                'preview': df.head(5).to_dict('records') if len(df) > 0 else []
+            })
+            
+        except Exception as e:
+            # Limpiar archivo temporal en caso de error
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            return jsonify({
+                'success': False,
+                'message': f'Error durante la reparación: {str(e)}'
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error interno: {str(e)}'
+        })
+
+@app.route('/api/csv-diagnose', methods=['POST'])
+def diagnose_csv_endpoint():
+    """Endpoint para diagnosticar un CSV usando csvkit"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'message': 'No se seleccionó ningún archivo'})
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'success': False, 'message': 'No se seleccionó ningún archivo'})
+        
+        if not file.filename.lower().endswith('.csv'):
+            return jsonify({'success': False, 'message': 'Solo se admiten archivos CSV'})
+        
+        # Guardar archivo temporalmente
+        filename = secure_filename(file.filename)
+        temp_path = os.path.join(app.config['UPLOAD_FOLDER'], f"temp_{filename}")
+        file.save(temp_path)
+        
+        try:
+            # Diagnosticar con csvkit
+            diagnosis = diagnose_csv_with_csvkit(temp_path)
+            
+            # Limpiar archivo temporal
+            os.remove(temp_path)
+            
+            return jsonify({
+                'success': True,
+                'message': 'Diagnóstico completado',
+                'diagnosis': diagnosis
+            })
+            
+        except Exception as e:
+            # Limpiar archivo temporal en caso de error
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            return jsonify({
+                'success': False,
+                'message': f'Error durante el diagnóstico: {str(e)}'
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error interno: {str(e)}'
+        })
+
 @app.route('/api/generate-intelligent-analysis', methods=['POST'])
 def generate_intelligent_analysis():
     """Genera análisis inteligente usando Google Gemini"""
     try:
-        data = request.json
+        # Manejar la decodificación de JSON de manera más robusta
+        try:
+            data = request.json
+        except Exception as json_error:
+            print(f"Error decodificando JSON: {json_error}")
+            # Intentar decodificar manualmente
+            raw_data = request.get_data()
+            try:
+                data = json.loads(raw_data.decode('utf-8'))
+            except UnicodeDecodeError:
+                # Fallback para diferentes codificaciones
+                data = json.loads(raw_data.decode('latin-1'))
+        
         data_summary = data.get('dataSummary', {})
         chart_data = data.get('chartData', {})
         analysis_name = data.get('analysisName', 'Análisis')
@@ -2622,7 +3264,7 @@ def generate_intelligent_analysis():
         
         # Crear prompt para Gemini
         prompt = f"""
-        Eres un analista experto en datos agroindustriales. Analiza estos datos y genera un análisis inteligente y recomendaciones específicas.
+        Eres un consultor estratégico especializado en análisis agroindustrial. Genera un análisis ejecutivo breve y recomendaciones estratégicas para la toma de decisiones.
 
         DATOS DEL ANÁLISIS:
         - Nombre: {analysis_name}
@@ -2633,21 +3275,33 @@ def generate_intelligent_analysis():
         - Período: {data_summary.get('date_range', {}).get('start', 'N/A')} a {data_summary.get('date_range', {}).get('end', 'N/A')}
         - Tipo de visualización: {chart_data.get('type', 'desconocido')}
 
-        INSTRUCCIONES:
-        1. Analiza la productividad y eficiencia operacional
-        2. Identifica patrones y tendencias relevantes
-        3. Proporciona recomendaciones específicas y accionables
-        4. Explica el significado de los números en contexto empresarial
-        5. Mantén el análisis conciso pero completo (máximo 200 palabras)
-        6. Usa un tono profesional pero accesible
-        7. Enfócate en insights que ayuden a tomar decisiones
+        INSTRUCCIONES ESTRICTAS:
+        1. OBSERVA los datos y describe brevemente lo que ves
+        2. IDENTIFICA las tendencias principales y patrones evidentes
+        3. TONO: Simple, directo, descriptivo
+        4. FORMATO: Un solo párrafo descriptivo
 
-        Responde en español y en formato de párrafo continuo.
+        ESTRUCTURA OBLIGATORIA:
+        RESUMEN: [Describe qué ves en los datos, tendencias principales y patrones observados]
+
+        Responde en español, máximo 40 palabras, solo describiendo lo que observas en los datos.
         """
         
         # Generar análisis con Gemini
         response = ai_model.generate_content(prompt)
-        analysis_text = response.text.strip()
+        
+        # Manejar la respuesta de Gemini de manera más robusta
+        if hasattr(response, 'text') and response.text:
+            analysis_text = str(response.text).strip()
+        elif hasattr(response, 'candidates') and response.candidates:
+            # Fallback para diferentes formatos de respuesta
+            candidate = response.candidates[0]
+            if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
+                analysis_text = str(candidate.content.parts[0].text).strip()
+            else:
+                analysis_text = str(candidate).strip()
+        else:
+            analysis_text = str(response).strip()
         
         return jsonify({
             'success': True,
@@ -2662,6 +3316,391 @@ def generate_intelligent_analysis():
             'analysis': 'Error generando análisis inteligente. Usando análisis local.',
             'fallback': True
         })
+
+@app.route('/api/test', methods=['GET'])
+def test_endpoint():
+    """Endpoint de prueba para verificar conectividad"""
+    return jsonify({
+        'status': 'ok',
+        'message': 'Servidor funcionando correctamente',
+        'timestamp': datetime.now().isoformat()
+    })
+
+def read_csv_intelligently(filepath):
+    """Lee un archivo CSV de manera inteligente, probando diferentes separadores y encodings"""
+    encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+    separators = [';', ',', '\t', '|']
+    
+    for encoding in encodings:
+        for sep in separators:
+            try:
+                df = pd.read_csv(filepath, sep=sep, encoding=encoding, low_memory=False)
+                # Verificar que el DataFrame tiene sentido (más de 1 columna y filas)
+                if len(df.columns) > 1 and len(df) > 0:
+                    print(f"✅ Archivo leído exitosamente con encoding={encoding}, separador='{sep}'")
+                    return df
+            except Exception as e:
+                continue
+    
+    # Si todo falla, intentar con pandas auto-detección
+    try:
+        df = pd.read_csv(filepath, encoding='utf-8', low_memory=False)
+        print(f"✅ Archivo leído con detección automática de pandas")
+        return df
+    except Exception as e:
+        raise Exception(f"No se pudo leer el archivo con ningún método: {str(e)}")
+
+def analyze_data_with_ai(df):
+    """Analiza los datos con IA para identificar problemas y sugerir soluciones"""
+    try:
+        if not ai_model:
+            # Fallback sin IA
+            return analyze_data_without_ai(df)
+        
+        # Preparar muestra de datos para análisis (primeras 100 filas)
+        sample_data = df.head(100).to_string(max_rows=50, max_cols=10)
+        
+        # Crear prompt para IA
+        prompt = f"""
+        Analiza este conjunto de datos CSV y identifica problemas específicos:
+
+        DATOS DE MUESTRA:
+        {sample_data}
+
+        INFORMACIÓN DEL ARCHIVO:
+        - Total de filas: {len(df)}
+        - Total de columnas: {len(df.columns)}
+        - Columnas: {list(df.columns)}
+
+        TAREA:
+        1. Identifica problemas específicos como:
+           - Caracteres especiales problemáticos
+           - Columnas vacías o con muchos valores faltantes
+           - Valores numéricos con texto mixto
+           - Inconsistencias en formatos
+           - Datos atípicos o anómalos
+
+        2. Para cada problema, sugiere una solución específica
+
+        3. Identifica qué datos son válidos y deben conservarse
+
+        Responde en formato JSON con esta estructura:
+        {{
+            "problematic_data": ["lista de problemas específicos encontrados"],
+            "suggested_changes": ["lista de cambios sugeridos"],
+            "detected_tables": [{{"name": "nombre", "columns": [], "rows": 0, "issues": 0}}],
+            "data_quality_score": 85,
+            "critical_issues": ["problemas críticos que requieren atención inmediata"],
+            "preservation_recommendations": ["qué datos preservar y por qué"]
+        }}
+        """
+        
+        response = ai_model.generate_content(prompt)
+        
+        # Validar que la respuesta no esté vacía
+        if not response or not response.text:
+            print("⚠️ Respuesta de IA vacía, usando análisis sin IA")
+            return analyze_data_without_ai(df)
+        
+        # Limpiar la respuesta de posibles caracteres extra
+        response_text = response.text.strip()
+        
+        # Intentar extraer JSON de la respuesta si está envuelto en texto
+        if '```json' in response_text:
+            # Extraer JSON de bloques de código
+            start = response_text.find('```json') + 7
+            end = response_text.find('```', start)
+            if end != -1:
+                response_text = response_text[start:end].strip()
+        elif '{' in response_text and '}' in response_text:
+            # Extraer JSON si está en el texto
+            start = response_text.find('{')
+            end = response_text.rfind('}') + 1
+            response_text = response_text[start:end]
+        
+        print(f"🔍 Respuesta de IA procesada: {response_text[:200]}...")
+        
+        try:
+            ai_result = json.loads(response_text)
+        except json.JSONDecodeError as json_error:
+            print(f"⚠️ Error decodificando JSON de IA: {json_error}")
+            print(f"Respuesta original: {response_text}")
+            return analyze_data_without_ai(df)
+        
+        # Validar y completar el resultado
+        return {
+            'problematic_data': ai_result.get('problematic_data', ['Análisis con IA completado']),
+            'suggested_changes': ai_result.get('suggested_changes', ['Limpieza automática aplicada']),
+            'detected_tables': ai_result.get('detected_tables', [{
+                'name': 'Tabla Principal',
+                'columns': list(df.columns),
+                'rows': len(df),
+                'issues': 0
+            }]),
+            'data_quality_score': ai_result.get('data_quality_score', 75),
+            'critical_issues': ai_result.get('critical_issues', []),
+            'preservation_recommendations': ai_result.get('preservation_recommendations', ['Preservar todos los datos válidos'])
+        }
+        
+    except Exception as e:
+        print(f"⚠️ Error en análisis con IA: {e}")
+        return analyze_data_without_ai(df)
+
+def analyze_data_without_ai(df):
+    """Análisis básico sin IA como fallback"""
+    problematic_data = []
+    suggested_changes = []
+    
+    # Analizar columnas vacías
+    empty_cols = df.columns[df.isnull().all()].tolist()
+    if empty_cols:
+        problematic_data.append(f"Columnas completamente vacías: {empty_cols}")
+        suggested_changes.append("Eliminar columnas vacías")
+    
+    # Analizar valores faltantes
+    missing_data = df.isnull().sum()
+    high_missing = missing_data[missing_data > len(df) * 0.5].index.tolist()
+    if high_missing:
+        problematic_data.append(f"Columnas con más del 50% de datos faltantes: {high_missing}")
+        suggested_changes.append("Evaluar eliminación de columnas con muchos datos faltantes")
+    
+    # Analizar caracteres especiales
+    special_chars_found = False
+    for col in df.select_dtypes(include=['object']).columns:
+        if df[col].astype(str).str.contains(r'[^\w\s.,-]', regex=True).any():
+            special_chars_found = True
+            break
+    
+    if special_chars_found:
+        problematic_data.append("Caracteres especiales detectados en campos de texto")
+        suggested_changes.append("Limpiar caracteres especiales problemáticos")
+    
+    return {
+        'problematic_data': problematic_data or ['Datos analizados, algunos problemas menores detectados'],
+        'suggested_changes': suggested_changes or ['Limpieza automática aplicada'],
+        'detected_tables': [{
+            'name': 'Tabla Principal',
+            'columns': list(df.columns),
+            'rows': len(df),
+            'issues': len(problematic_data)
+        }],
+        'data_quality_score': 80,
+        'critical_issues': [],
+        'preservation_recommendations': ['Preservar todos los datos válidos']
+    }
+
+def repair_data_intelligently(df_original, analysis_result):
+    """Repara los datos de manera inteligente basándose en el análisis de IA"""
+    df_repaired = df_original.copy()
+    repair_log = []
+    issues_fixed = 0
+    
+    try:
+        # 1. Eliminar columnas completamente vacías
+        empty_cols = df_repaired.columns[df_repaired.isnull().all()].tolist()
+        if empty_cols:
+            df_repaired = df_repaired.drop(columns=empty_cols)
+            repair_log.append(f"Eliminadas {len(empty_cols)} columnas vacías: {empty_cols}")
+            issues_fixed += len(empty_cols)
+        
+        # 2. Limpiar caracteres especiales problemáticos (conservar datos numéricos)
+        for col in df_repaired.select_dtypes(include=['object']).columns:
+            original_values = df_repaired[col].copy()
+            
+            # Detectar si la columna contiene principalmente números
+            numeric_count = pd.to_numeric(df_repaired[col], errors='coerce').notna().sum()
+            total_count = df_repaired[col].notna().sum()
+            
+            if total_count > 0 and numeric_count / total_count > 0.7:
+                # Columna principalmente numérica - limpiar pero preservar números
+                df_repaired[col] = df_repaired[col].astype(str).str.replace(r'[^\w\s.,-]', '', regex=True)
+                # Intentar convertir a numérico
+                numeric_series = pd.to_numeric(df_repaired[col], errors='coerce')
+                if not numeric_series.isna().all():
+                    df_repaired[col] = numeric_series
+                    repair_log.append(f"Columna '{col}': limpiados caracteres especiales y convertida a numérico")
+                    issues_fixed += 1
+            else:
+                # Columna de texto - limpieza más conservadora
+                df_repaired[col] = df_repaired[col].astype(str).str.replace(r'[^\w\s.,-áéíóúñü]', '', regex=True)
+                changes = (original_values != df_repaired[col]).sum()
+                if changes > 0:
+                    repair_log.append(f"Columna '{col}': limpiados caracteres especiales ({changes} valores)")
+                    issues_fixed += 1
+        
+        # 3. Manejar valores faltantes de manera inteligente
+        for col in df_repaired.columns:
+            missing_count = df_repaired[col].isnull().sum()
+            if missing_count > 0:
+                if df_repaired[col].dtype in ['int64', 'float64']:
+                    # Para columnas numéricas, llenar con 0 o mediana
+                    median_val = df_repaired[col].median()
+                    if pd.notna(median_val):
+                        df_repaired[col] = df_repaired[col].fillna(median_val)
+                        repair_log.append(f"Columna '{col}': llenados {missing_count} valores faltantes con mediana ({median_val})")
+                    else:
+                        df_repaired[col] = df_repaired[col].fillna(0)
+                        repair_log.append(f"Columna '{col}': llenados {missing_count} valores faltantes con 0")
+                else:
+                    # Para columnas de texto, llenar con string vacío
+                    df_repaired[col] = df_repaired[col].fillna('')
+                    repair_log.append(f"Columna '{col}': llenados {missing_count} valores faltantes con string vacío")
+                issues_fixed += 1
+        
+        # 4. Eliminar solo filas completamente vacías (conservar datos válidos)
+        rows_before = len(df_repaired)
+        df_repaired = df_repaired.dropna(how='all')
+        rows_removed = rows_before - len(df_repaired)
+        if rows_removed > 0:
+            repair_log.append(f"Eliminadas {rows_removed} filas completamente vacías")
+            issues_fixed += rows_removed
+        
+        # 5. Estandarizar nombres de columnas
+        original_cols = list(df_original.columns)
+        new_cols = [col.strip().replace(' ', '_').replace('-', '_') for col in df_repaired.columns]
+        df_repaired.columns = new_cols
+        if original_cols != new_cols:
+            repair_log.append("Estandarizados nombres de columnas")
+            issues_fixed += 1
+        
+        # 6. Validar que se conservaron todos los datos importantes
+        if len(df_repaired) < len(df_original) * 0.9:  # Menos del 90% de datos
+            repair_log.append("⚠️ ADVERTENCIA: Se perdieron más del 10% de los datos originales")
+        
+        return df_repaired, repair_log
+        
+    except Exception as e:
+        print(f"❌ Error en reparación inteligente: {e}")
+        # En caso de error, devolver datos originales con limpieza básica
+        df_fallback = df_original.copy()
+        df_fallback = df_fallback.dropna(how='all')
+        return df_fallback, [f"Error en reparación avanzada, aplicada limpieza básica: {str(e)}"]
+
+def validate_repaired_data(df_original, df_repaired):
+    """Valida la calidad de los datos reparados"""
+    try:
+        original_rows = len(df_original)
+        repaired_rows = len(df_repaired)
+        original_cols = len(df_original.columns)
+        repaired_cols = len(df_repaired.columns)
+        
+        # Calcular puntuación de calidad
+        data_preservation = (repaired_rows / original_rows) * 100 if original_rows > 0 else 0
+        column_preservation = (repaired_cols / original_cols) * 100 if original_cols > 0 else 0
+        
+        # Calcular calidad general
+        quality_score = (data_preservation * 0.7 + column_preservation * 0.3)
+        
+        # Detectar problemas específicos
+        issues = []
+        if data_preservation < 95:
+            issues.append(f"Pérdida de datos: {100 - data_preservation:.1f}% de filas perdidas")
+        if column_preservation < 80:
+            issues.append(f"Pérdida de columnas: {100 - column_preservation:.1f}% de columnas perdidas")
+        
+        # Verificar integridad de datos
+        empty_cells = df_repaired.isnull().sum().sum()
+        total_cells = df_repaired.size
+        completeness = ((total_cells - empty_cells) / total_cells) * 100 if total_cells > 0 else 0
+        
+        return {
+            'total_issues_fixed': max(0, original_rows - repaired_rows + (original_cols - repaired_cols)),
+            'quality_score': min(100, max(0, quality_score)),
+            'data_preservation_percentage': data_preservation,
+            'column_preservation_percentage': column_preservation,
+            'data_completeness_percentage': completeness,
+            'issues_detected': issues,
+            'validation_passed': quality_score >= 70 and data_preservation >= 90
+        }
+        
+    except Exception as e:
+        print(f"❌ Error en validación: {e}")
+        return {
+            'total_issues_fixed': 0,
+            'quality_score': 50,
+            'data_preservation_percentage': 0,
+            'column_preservation_percentage': 0,
+            'data_completeness_percentage': 0,
+            'issues_detected': [f"Error en validación: {str(e)}"],
+            'validation_passed': False
+        }
+
+@app.route('/api/intelligent-repair', methods=['POST'])
+def intelligent_repair():
+    """Reparación inteligente avanzada con IA para análisis y decisiones"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No se proporcionó archivo'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No se seleccionó archivo'}), 400
+        
+        # Crear directorio uploads si no existe
+        os.makedirs('uploads', exist_ok=True)
+        
+        # Guardar archivo temporalmente
+        filename = secure_filename(file.filename)
+        filepath = os.path.join('uploads', filename)
+        file.save(filepath)
+        
+        try:
+            # ===== PASO 1: LECTURA INTELIGENTE DEL ARCHIVO =====
+            df_original = read_csv_intelligently(filepath)
+            original_rows = len(df_original)
+            original_cols = len(df_original.columns)
+            
+            print(f"📊 Archivo original: {original_rows} filas, {original_cols} columnas")
+            
+            # ===== PASO 2: ANÁLISIS DETALLADO CON IA =====
+            analysis_result = analyze_data_with_ai(df_original)
+            
+            # ===== PASO 3: REPARACIÓN INTELIGENTE =====
+            df_repaired, repair_log = repair_data_intelligently(df_original, analysis_result)
+            
+            # ===== PASO 4: VALIDACIÓN Y VERIFICACIÓN =====
+            validation_result = validate_repaired_data(df_original, df_repaired)
+            
+            # ===== PASO 5: PREPARAR RESPUESTA COMPLETA =====
+            # Generar vista previa con todos los datos
+            preview_data = df_repaired.fillna('').to_dict('records')
+            
+            # Generar todos los datos reparados (para descarga completa)
+            all_data = df_repaired.fillna('').to_dict('records')
+            
+            repair_result = {
+                'success': True,
+                'original_rows': int(original_rows),
+                'repaired_rows': int(len(df_repaired)),
+                'issues_fixed': validation_result['total_issues_fixed'],
+                'columns': list(df_repaired.columns),
+                'preview': preview_data,
+                'all_data': all_data,  # Todos los datos reparados
+                'repairs_applied': repair_log,
+                'ai_analysis': analysis_result,
+                'validation': validation_result,
+                'data_integrity': {
+                    'original_data_preserved': len(df_repaired) >= original_rows * 0.95,  # Al menos 95% de datos preservados
+                    'columns_preserved': len(df_repaired.columns) >= original_cols * 0.8,  # Al menos 80% de columnas
+                    'quality_score': validation_result['quality_score']
+                },
+                'repaired_file': filepath  # Mantener el mismo archivo, no crear copia
+            }
+            
+            return jsonify(repair_result)
+                
+        except Exception as e:
+            print(f"❌ Error en reparación inteligente: {e}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({'error': f'Error en reparación inteligente: {str(e)}'}), 500
+        
+    except Exception as e:
+        print(f"❌ Error procesando archivo: {e}")
+        return jsonify({'error': f'Error procesando archivo: {str(e)}'}), 500
+    finally:
+        # Limpiar archivos temporales si es necesario
+        pass
 
 if __name__ == '__main__':
     print("=" * 60)

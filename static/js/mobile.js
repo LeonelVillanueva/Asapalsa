@@ -25,26 +25,39 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeMobileApp() {
+    console.log('📱 [Mobile] Inicializando aplicación móvil...');
+    
     // Configurar eventos de drag and drop
+    console.log('📱 [Mobile] Configurando eventos de carga...');
     setupMobileDragAndDrop();
     
     // Configurar eventos de botones
+    console.log('📱 [Mobile] Configurando eventos de botones...');
     setupMobileEventListeners();
     
     // Configurar evento del modal de guardar análisis
     const confirmSaveBtn = document.getElementById('mobileConfirmSaveAnalysis');
     if (confirmSaveBtn) {
+        console.log('📱 [Mobile] Configurando botón de guardar análisis...');
         confirmSaveBtn.addEventListener('click', saveMobileAnalysis);
+    } else {
+        console.log('📱 [Mobile] Botón de guardar análisis no encontrado');
     }
     
     // Ocultar botón de guardar análisis inicialmente
     const saveBtn = document.getElementById('saveAnalysisBtn');
     if (saveBtn) {
         saveBtn.style.display = 'none';
+        console.log('📱 [Mobile] Botón de guardar análisis ocultado');
+    } else {
+        console.log('📱 [Mobile] Botón de guardar análisis no encontrado');
     }
     
     // Mostrar mensaje de bienvenida
+    console.log('📱 [Mobile] Mostrando mensaje de bienvenida...');
     showMobileWelcomeMessage();
+    
+    console.log('📱 [Mobile] Aplicación móvil inicializada correctamente');
 }
 
 // ========================================
@@ -55,15 +68,25 @@ function setupMobileDragAndDrop() {
     const uploadArea = document.getElementById('mobileUploadArea');
     const fileInput = document.getElementById('mobileFileInput');
     
-    if (!uploadArea || !fileInput) return;
+    console.log('📱 [Mobile] Configurando eventos de carga:', {
+        uploadArea: !!uploadArea,
+        fileInput: !!fileInput
+    });
+    
+    if (!uploadArea || !fileInput) {
+        console.error('📱 [Mobile] Elementos de carga no encontrados');
+        return;
+    }
     
     // Eventos de touch para móviles
     uploadArea.addEventListener('touchstart', function(e) {
+        console.log('📱 [Mobile] Touch start detectado');
         e.preventDefault();
         uploadArea.classList.add('dragover');
     });
     
     uploadArea.addEventListener('touchend', function(e) {
+        console.log('📱 [Mobile] Touch end detectado');
         e.preventDefault();
         uploadArea.classList.remove('dragover');
         fileInput.click();
@@ -71,13 +94,21 @@ function setupMobileDragAndDrop() {
     
     // Evento de selección de archivo
     fileInput.addEventListener('change', function(e) {
-        handleMobileFileSelect(e.target.files[0]);
+        console.log('📱 [Mobile] Cambio en input de archivo detectado');
+        console.log('📱 [Mobile] Archivos seleccionados:', e.target.files.length);
+        if (e.target.files.length > 0) {
+            console.log('📱 [Mobile] Primer archivo:', e.target.files[0].name);
+            handleMobileFileSelect(e.target.files[0]);
+        }
     });
     
     // Eventos de click
     uploadArea.addEventListener('click', function() {
+        console.log('📱 [Mobile] Click en área de carga');
         fileInput.click();
     });
+    
+    console.log('📱 [Mobile] Eventos de carga configurados correctamente');
 }
 
 // ========================================
@@ -85,23 +116,32 @@ function setupMobileDragAndDrop() {
 // ========================================
 
 function handleMobileFileSelect(file) {
-    if (!file) return;
+    if (!file) {
+        console.log('📱 [Mobile] No se seleccionó archivo');
+        return;
+    }
     
-    console.log('📁 Archivo seleccionado:', file.name);
+    console.log('📁 [Mobile] Archivo seleccionado:', file.name, 'Tamaño:', file.size, 'Tipo:', file.type);
     
     // Validar tipo de archivo
     const allowedTypes = ['.csv', '.xlsx', '.xls'];
     const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
     
+    console.log('📱 [Mobile] Extensión del archivo:', fileExtension);
+    
     if (!allowedTypes.includes(fileExtension)) {
+        console.log('📱 [Mobile] Formato de archivo no válido:', fileExtension);
         showMobileError('Formato de archivo no válido. Solo se permiten archivos CSV y XLSX.');
         return;
     }
+    
+    console.log('📱 [Mobile] Archivo válido, mostrando información...');
     
     // Mostrar información del archivo
     showMobileFileInfo(file);
     
     // Procesar archivo
+    console.log('📱 [Mobile] Iniciando procesamiento...');
     processMobileFile(file);
 }
 
@@ -252,6 +292,7 @@ function processCachedData(data) {
 }
 
 function processMobileFile(file) {
+    console.log('📱 [Mobile] Iniciando procesamiento de archivo:', file.name, file.size);
     showMobileLoading('Procesando archivo...');
     
     // Limpiar caché al cargar nuevo archivo
@@ -260,13 +301,21 @@ function processMobileFile(file) {
     const formData = new FormData();
     formData.append('file', file);
     
+    console.log('📱 [Mobile] Enviando archivo al servidor...');
+    
     fetch('/upload', {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('📱 [Mobile] Respuesta del servidor:', response.status, response.statusText);
+        return response.json();
+    })
     .then(data => {
+        console.log('📱 [Mobile] Datos recibidos del servidor:', data);
+        
         if (data.success) {
+            console.log('📱 [Mobile] Archivo procesado exitosamente, obteniendo resumen...');
             // Obtener datos del servidor usando el endpoint de resumen
             fetchDataSummary();
             
@@ -274,14 +323,15 @@ function processMobileFile(file) {
             showMobileSuccess('Archivo procesado correctamente');
             
         } else {
+            console.log('📱 [Mobile] Error en procesamiento:', data.message);
             hideMobileLoading();
             showMobileError(data.message || 'Error al procesar el archivo');
         }
     })
     .catch(error => {
         hideMobileLoading();
-        console.error('❌ Error:', error);
-        showMobileError('Error al procesar el archivo');
+        console.error('❌ [Mobile] Error en fetch:', error);
+        showMobileError('Error al procesar el archivo: ' + error.message);
     });
 }
 

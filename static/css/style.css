@@ -2376,6 +2376,289 @@ body {
 }
 
 /* ===============================
+   REPAIR MODAL STYLES
+   =============================== */
+
+.repair-process {
+    padding: 1rem 0;
+}
+
+.repair-status .alert {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.repair-progress .progress {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.repair-progress .progress-bar {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: width 0.6s ease;
+}
+
+.repair-steps {
+    margin-top: 1.5rem;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+    opacity: 0.6;
+}
+
+.step-item:last-child {
+    border-bottom: none;
+}
+
+.step-item.active {
+    opacity: 1;
+    background: linear-gradient(90deg, rgba(13, 110, 253, 0.1) 0%, transparent 100%);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin: 0 -1rem;
+}
+
+.step-item.success {
+    opacity: 1;
+    color: #198754;
+}
+
+.step-item.error {
+    opacity: 1;
+    color: #dc3545;
+}
+
+.step-item i {
+    font-size: 1.1rem;
+    width: 20px;
+    text-align: center;
+}
+
+.step-item span {
+    font-weight: 500;
+    margin-left: 0.5rem;
+}
+
+.repair-details {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid #e9ecef;
+}
+
+.repair-details h6 {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.badge-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.badge-container .badge {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+}
+
+/* Modal de reparación específico */
+#repairModal .modal-content {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+#repairModal .modal-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border-radius: 16px 16px 0 0;
+    border: none;
+}
+
+#repairModal .modal-header .modal-title {
+    font-weight: 600;
+}
+
+#repairModal .modal-body {
+    padding: 2rem;
+}
+
+#repairModal .modal-footer {
+    background: #f8f9fa;
+    border-radius: 0 0 16px 16px;
+    border: none;
+    padding: 1.5rem 2rem;
+}
+
+/* Botones del modal de reparación */
+#repairModal .btn-primary {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+#repairModal .btn-primary:hover {
+    background: linear-gradient(135deg, #218838 0%, #1ea085 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+#repairModal .btn-secondary {
+    background: #6c757d;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+#repairModal .btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+#repairModal .btn-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+#repairModal .btn-warning:hover {
+    background: linear-gradient(135deg, #e0a800 0%, #e55a00 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+}
+
+/* Animaciones para el proceso de reparación */
+@keyframes repairPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.step-item.active {
+    animation: repairPulse 2s infinite;
+}
+
+/* Análisis con IA en modal de reparación */
+.ai-analysis-loading {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid #e9ecef;
+}
+
+.ai-analysis-result {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid #e9ecef;
+}
+
+.ai-analysis-result .analysis-text {
+    background: white;
+    border-radius: 6px;
+    padding: 1rem;
+    border-left: 4px solid #0d6efd;
+    margin-bottom: 1rem;
+}
+
+.ai-analysis-result .analysis-text .lead {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 0;
+    color: #495057;
+}
+
+.ai-analysis-result .analysis-recommendations {
+    background: white;
+    border-radius: 6px;
+    padding: 1rem;
+    border-left: 4px solid #ffc107;
+}
+
+.ai-analysis-result .analysis-recommendations h6 {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.ai-analysis-fallback {
+    background: #fff3cd;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid #ffeaa7;
+}
+
+.ai-analysis-fallback .analysis-text {
+    background: white;
+    border-radius: 6px;
+    padding: 1rem;
+    border-left: 4px solid #ffc107;
+}
+
+.ai-analysis-fallback .analysis-text ul {
+    margin-bottom: 0;
+}
+
+.ai-analysis-fallback .analysis-text li {
+    margin-bottom: 0.25rem;
+}
+
+/* Responsive para modal de reparación */
+@media (max-width: 768px) {
+    #repairModal .modal-body {
+        padding: 1rem;
+    }
+    
+    #repairModal .modal-footer {
+        padding: 1rem;
+    }
+    
+    .repair-details {
+        padding: 1rem;
+    }
+    
+    .step-item {
+        padding: 0.5rem 0;
+    }
+    
+    .step-item.active {
+        padding: 0.5rem 0.75rem;
+        margin: 0 -0.75rem;
+    }
+    
+    .ai-analysis-result .analysis-text,
+    .ai-analysis-fallback .analysis-text {
+        padding: 0.75rem;
+    }
+    
+    .ai-analysis-result .analysis-recommendations {
+        padding: 0.75rem;
+    }
+}
+
+/* ===============================
    CRITICAL: DROPDOWN Z-INDEX FIX
    =============================== */
 
@@ -2409,4 +2692,738 @@ body {
 .navbar .navbar-nav .dropdown {
     z-index: 1001 !important;
     position: relative !important;
+}
+
+/* Estilos para el área de reparación */
+.repair-area {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 2rem 0;
+}
+
+.repair-header {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.repair-title {
+    display: flex;
+    align-items: center;
+}
+
+.repair-title i {
+    font-size: 2rem;
+    color: #007bff;
+}
+
+.repair-title h2 {
+    color: #333;
+    font-weight: 600;
+}
+
+.repair-title p {
+    color: #666;
+    margin: 0;
+}
+
+.column-item {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.column-item:hover {
+    background: #e9ecef;
+    border-color: #007bff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.column-actions .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.data-preview {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background: white;
+}
+
+.data-preview table {
+    margin: 0;
+}
+
+.data-preview th {
+    background: #f8f9fa;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.5rem;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.data-preview td {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.file-details .file-detail {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.file-details .file-detail:last-child {
+    border-bottom: none;
+}
+
+.file-details .fw-bold {
+    color: #495057;
+    font-weight: 600;
+}
+
+.file-details .ms-2 {
+    color: #6c757d;
+}
+
+/* Animaciones para el editor */
+.column-item {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Estilos para botones de acción */
+.btn-outline-primary:hover {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+.btn-outline-warning:hover {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #212529;
+}
+
+.btn-outline-info:hover {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+    color: white;
+}
+
+/* Estado del editor */
+#editorStatus {
+    font-style: italic;
+    color: #6c757d;
+}
+
+/* Responsive para el área de reparación */
+@media (max-width: 992px) {
+    .repair-area {
+        padding: 1rem 0;
+    }
+    
+    .repair-header {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .repair-title h2 {
+        font-size: 1.5rem;
+    }
+    
+    .data-preview {
+        max-height: 300px;
+    }
+}
+
+@media (max-width: 768px) {
+    .repair-title {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .repair-title i {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .column-item {
+        margin-bottom: 1rem;
+    }
+    
+    .column-actions {
+        margin-top: 0.5rem;
+    }
+    
+    .column-actions .btn {
+        width: 100%;
+        margin-bottom: 0.25rem;
+    }
+}
+
+/* Estilos para la pantalla de reparación completa */
+.repair-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    z-index: 9999;
+    overflow-y: auto;
+}
+
+.repair-header-fixed {
+    position: sticky;
+    top: 0;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 1rem 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 10000;
+}
+
+.repair-content {
+    padding: 2rem 0;
+    min-height: calc(100vh - 100px);
+}
+
+.repair-title h2 {
+    color: white;
+    font-weight: 600;
+    margin: 0;
+}
+
+.repair-title p {
+    color: rgba(255,255,255,0.8);
+    margin: 0;
+}
+
+.repair-title i {
+    font-size: 2rem;
+    color: white;
+}
+
+/* Cards de pasos */
+.card {
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(40,167,69,0.15);
+    border: none;
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0 !important;
+    border: none;
+    padding: 1rem 1.5rem;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Información del archivo */
+.file-info-grid {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.file-info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.file-info-item:last-child {
+    border-bottom: none;
+}
+
+.file-info-item .label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.file-info-item .value {
+    color: #6c757d;
+}
+
+/* Lista de errores */
+.errors-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.errors-list .error-item {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+    font-size: 0.875rem;
+}
+
+/* Análisis con IA */
+.ai-analysis-section {
+    min-height: 200px;
+}
+
+.ai-card {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    height: 100%;
+}
+
+.ai-card h6 {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.problem-item, .change-item, .table-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.problem-item:last-child, .change-item:last-child, .table-item:last-child {
+    border-bottom: none;
+}
+
+.table-name {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.25rem;
+}
+
+.table-info {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+/* Progreso de reparación */
+.repair-progress {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.progress {
+    height: 8px;
+    border-radius: 4px;
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+    border-radius: 4px;
+}
+
+/* Log de reparación */
+.log-container {
+    max-height: 200px;
+    overflow-y: auto;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 1rem;
+}
+
+.log-entry {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 0.875rem;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+/* Editor de datos */
+.data-editor-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+/* Estilos para el botón de guardar */
+#saveChangesBtn {
+    transition: all 0.3s ease;
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+}
+
+#saveChangesBtn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+#saveChangesBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Estados del botón de guardar */
+#saveChangesBtn.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+#saveChangesBtn.btn-outline-success {
+    background-color: transparent;
+    border-color: #28a745;
+    color: #28a745;
+}
+
+#saveChangesBtn.btn-outline-success:hover:not(:disabled) {
+    background-color: #28a745;
+    color: white;
+}
+
+.columns-panel {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.data-preview-panel {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.editing-tools {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.editor-status {
+    background: #e9ecef;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    text-align: center;
+}
+
+/* Botones de acción */
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.action-buttons .btn {
+    min-width: 200px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.action-buttons .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+/* Responsive para pantalla de reparación */
+@media (max-width: 992px) {
+    .repair-content {
+        padding: 1rem 0;
+    }
+    
+    .repair-header-fixed {
+        padding: 0.75rem 0;
+    }
+    
+    .repair-title h2 {
+        font-size: 1.5rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .action-buttons .btn {
+        width: 100%;
+        min-width: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .repair-title {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .repair-title i {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .columns-panel, .data-preview-panel {
+        max-height: 250px;
+    }
+    
+    .editing-tools .row {
+        gap: 0.5rem;
+    }
+    
+    .editing-tools .col-md-3 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}
+
+/* Animaciones */
+@keyframes slideInFromTop {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.repair-screen {
+    animation: slideInFromTop 0.5s ease-out;
+}
+
+.card {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Efectos hover mejorados */
+.ai-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    transition: all 0.3s ease;
+}
+
+.problem-item:hover, .change-item:hover, .table-item:hover {
+    background: #f8f9fa;
+    border-radius: 4px;
+    padding-left: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+/* ===== ESTILOS DEL EDITOR DE DATOS ===== */
+
+/* Panel de columnas */
+.columns-panel {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6 !important;
+}
+
+.column-item {
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 1px solid #e9ecef !important;
+}
+
+.column-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-color: var(--asapalsa-green-light) !important;
+}
+
+.column-item.bg-warning {
+    border-color: #ffc107 !important;
+    box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+}
+
+.column-name {
+    color: var(--asapalsa-green);
+    word-break: break-word;
+}
+
+.column-original {
+    font-style: italic;
+}
+
+.column-actions .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+/* Vista previa de datos */
+.data-preview-panel {
+    border: 1px solid #dee2e6 !important;
+}
+
+.data-preview-panel .table {
+    margin-bottom: 0;
+}
+
+.data-preview-panel .table th {
+    background-color: var(--asapalsa-green) !important;
+    color: white !important;
+    font-weight: 600;
+    border: none;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.data-preview-panel .table td {
+    border: 1px solid #dee2e6;
+    vertical-align: middle;
+    padding: 0.5rem;
+}
+
+.data-preview-panel .table tbody tr:hover {
+    background-color: rgba(45, 80, 22, 0.05);
+}
+
+/* Herramientas de limpieza */
+.cleaning-tools .btn {
+    transition: all 0.2s ease;
+}
+
+.cleaning-tools .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.cleaning-tools .btn:active {
+    transform: translateY(0);
+}
+
+/* Contadores y badges */
+#columnsCount, #previewCount {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Estado del editor */
+.editor-status {
+    padding: 0.75rem;
+    background: rgba(45, 80, 22, 0.05);
+    border-radius: 0.375rem;
+    border-left: 3px solid var(--asapalsa-green);
+}
+
+#editorStatus {
+    color: var(--asapalsa-green);
+    font-weight: 500;
+}
+
+#saveStatus {
+    font-weight: 500;
+}
+
+/* Scrollbar personalizado para el panel de columnas */
+.columns-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.columns-panel::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.columns-panel::-webkit-scrollbar-thumb {
+    background: var(--asapalsa-green-light);
+    border-radius: 3px;
+}
+
+.columns-panel::-webkit-scrollbar-thumb:hover {
+    background: var(--asapalsa-green);
+}
+
+/* Scrollbar personalizado para la vista previa */
+.data-preview-panel::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.data-preview-panel::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.data-preview-panel::-webkit-scrollbar-thumb {
+    background: var(--asapalsa-green-light);
+    border-radius: 3px;
+}
+
+.data-preview-panel::-webkit-scrollbar-thumb:hover {
+    background: var(--asapalsa-green);
+}
+
+/* Animaciones para el editor */
+.column-item {
+    animation: slideInLeft 0.3s ease-out;
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Responsive para el editor */
+@media (max-width: 768px) {
+    .cleaning-tools .btn {
+        margin-bottom: 0.5rem;
+    }
+    
+    .column-item {
+        padding: 0.75rem !important;
+    }
+    
+    .data-preview-panel {
+        font-size: 0.8rem;
+    }
 }
