@@ -318,6 +318,22 @@ def process_asapalsa_format(df):
     global current_data, processed_data, original_data
     
     try:
+        print(f"🔍 Columnas disponibles: {list(df.columns)}")
+        print(f"🔍 Tipos de datos: {df.dtypes.to_dict()}")
+        
+        # Verificar que las columnas necesarias existen
+        required_columns = ['DESCRIPCION', 'T.M.', 'MES']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        
+        if missing_columns:
+            return False, f"Columnas faltantes en formato ASAPALSA: {missing_columns}. Columnas disponibles: {list(df.columns)}"
+        
+        # Verificar si existe columna 'year' o crear una
+        if 'year' not in df.columns:
+            print("⚠️ Columna 'year' no encontrada, intentando crear desde fecha actual")
+            # Usar año actual como fallback
+            df['year'] = pd.Timestamp.now().year
+        
         # Extraer tipo de movimiento de la descripción
         df['TipoMovimiento'] = df['DESCRIPCION'].str.extract(r'\d*\s*(.*)', expand=False).str.strip().str.lower()
         
@@ -348,6 +364,10 @@ def process_asapalsa_format(df):
         # Convertir nombres de mes a número
         df['MES'] = df['MES'].str.strip().str.lower().map(meses_map)
         
+        # Verificar que el mapeo funcionó
+        if df['MES'].isna().any():
+            return False, f"Error al mapear meses. Valores únicos en MES: {df['MES'].unique()}"
+        
         # Crear columna de fecha
         df['Fecha'] = pd.to_datetime(df['year'].astype(str) + '-' + df['MES'] + '-01')
         
@@ -373,9 +393,13 @@ def process_asapalsa_format(df):
         processed_data = df_pivot
         original_data = df
         
+        print(f"✅ ASAPALSA procesado: {len(df)} filas, {len(df_clean['TipoMovimiento'].unique())} tipos de movimiento")
         return True, f"Archivo procesado correctamente. {len(df)} filas, {len(df.columns)} columnas"
         
     except Exception as e:
+        print(f"❌ Error detallado en process_asapalsa_format: {e}")
+        import traceback
+        traceback.print_exc()
         return False, f"Error al procesar formato ASAPALSA: {str(e)}"
 
 def split_concatenated_columns(df):
