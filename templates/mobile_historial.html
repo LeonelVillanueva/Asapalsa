@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial - ASAPALSA Analytics</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Mobile CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    
+    <!-- Meta tags para PWA -->
+    <meta name="theme-color" content="#2d5016">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="ASAPALSA Analytics">
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/asapalsa.png') }}">
+</head>
+<body class="mobile-body">
+    <!-- Header Móvil -->
+    <header class="mobile-header">
+        <div class="container-fluid">
+            <div class="mobile-header-content">
+                <button class="btn btn-link mobile-back-btn" onclick="goBack()" title="Volver">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="mobile-header-title">
+                    <h1 class="mobile-title">
+                        <i class="fas fa-history me-2"></i>
+                        Historial
+                    </h1>
+                </div>
+                <button class="btn btn-link mobile-refresh-btn" onclick="refreshHistorial()" title="Actualizar">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="mobile-main">
+        <!-- Loading State -->
+        <div id="loadingState" class="mobile-loading-container">
+            <div class="mobile-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <p class="mobile-loading-text">Cargando historial...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="mobile-empty-container d-none">
+            <div class="mobile-empty-icon">
+                <i class="fas fa-folder-open"></i>
+            </div>
+            <h3 class="mobile-empty-title">No hay análisis guardados</h3>
+            <p class="mobile-empty-text">Realiza tu primer análisis y guárdalo para verlo aquí</p>
+            <button class="btn mobile-btn-success" onclick="goToNewAnalysis()">
+                <i class="fas fa-plus me-2"></i>
+                Crear Nuevo Análisis
+            </button>
+        </div>
+
+        <!-- Historial List -->
+        <div id="historialList" class="mobile-historial-list d-none">
+            <!-- Las tarjetas de historial se cargarán aquí dinámicamente -->
+        </div>
+    </main>
+
+    <!-- Modal para ver análisis -->
+    <div class="modal fade" id="mobileAnalysisModal" tabindex="-1" aria-labelledby="mobileAnalysisModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content mobile-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title mobile-modal-title" id="mobileAnalysisModalLabel">
+                        <i class="fas fa-chart-line me-2"></i>
+                        <span id="modalAnalysisTitle">Análisis</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="modalAnalysisContent">
+                        <!-- Contenido del análisis se cargará aquí -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn mobile-btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cerrar
+                    </button>
+                    <button type="button" class="btn mobile-btn-danger" id="deleteAnalysisBtn">
+                        <i class="fas fa-trash me-1"></i>Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación de eliminación -->
+    <div class="modal fade" id="mobileDeleteModal" tabindex="-1" aria-labelledby="mobileDeleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content mobile-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title mobile-modal-title" id="mobileDeleteModalLabel">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Confirmar Eliminación
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mobile-modal-text">
+                        ¿Estás seguro de que quieres eliminar este análisis? Esta acción no se puede deshacer.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn mobile-btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn mobile-btn-danger" id="confirmDeleteBtn">
+                        <i class="fas fa-trash me-1"></i>Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast para notificaciones -->
+    <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3">
+        <div id="mobileToast" class="toast mobile-toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header mobile-toast-header">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong class="me-auto">ASAPALSA Analytics</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body mobile-toast-body">
+                <!-- Mensaje del toast -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/mobile_historial.js') }}"></script>
+</body>
+</html>

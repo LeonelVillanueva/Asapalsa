@@ -40,6 +40,11 @@
                     </div>
                 </a>
                 
+                <!-- Botón de historial -->
+                <button class="btn btn-link mobile-nav-btn me-2" onclick="goToHistorial()" title="Ver Historial">
+                    <i class="fas fa-history"></i>
+                </button>
+                
                 <!-- Menú hamburguesa -->
                 <button class="navbar-toggler mobile-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mobileNavbar" 
                         aria-controls="mobileNavbar" aria-expanded="false" aria-label="Menú">
@@ -66,12 +71,6 @@
                         <a class="nav-link mobile-nav-link" href="#summary-section">
                             <i class="fas fa-chart-pie"></i>
                             <span>Resumen</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link mobile-nav-link" href="{{ url_for('historial') }}">
-                            <i class="fas fa-history"></i>
-                            <span>Historial</span>
                         </a>
                     </li>
                 </ul>
@@ -109,14 +108,14 @@
                                 <i class="fas fa-upload me-2"></i>
                                 Cargar Archivo
                             </h2>
-                            <p class="mobile-card-text">Selecciona un archivo CSV o Excel para comenzar el análisis</p>
+                            <p class="mobile-card-text">Selecciona un archivo CSV para comenzar el análisis</p>
                             
                             <div class="mobile-upload-area" id="mobileUploadArea">
                                 <div class="mobile-upload-content">
                                     <i class="fas fa-cloud-upload-alt mobile-upload-icon"></i>
-                                    <h3 class="mobile-upload-title">Arrastra tu archivo aquí</h3>
-                                    <p class="mobile-upload-text">o haz clic para seleccionar</p>
-                                    <input type="file" id="mobileFileInput" accept=".csv,.xlsx,.xls" class="d-none">
+                                    <h3 class="mobile-upload-title">Arrastra tu archivo CSV aquí</h3>
+                                    <p class="mobile-upload-text">o haz clic para seleccionar un archivo CSV</p>
+                                    <input type="file" id="mobileFileInput" accept=".csv" class="d-none">
                                     <button class="btn btn-outline-primary mobile-upload-btn" onclick="document.getElementById('mobileFileInput').click()">
                                         Seleccionar Archivo
                                     </button>
@@ -167,7 +166,7 @@
                                     <span>Circular</span>
                                 </button>
                                 <button class="mobile-chart-btn" data-chart="scatter" onclick="selectMobileChart('scatter')">
-                                    <i class="fas fa-chart-scatter"></i>
+                                    <i class="fas fa-braille"></i>
                                     <span>Dispersión</span>
                                 </button>
                                 <button class="mobile-chart-btn" data-chart="histogram" onclick="selectMobileChart('histogram')">
@@ -210,12 +209,25 @@
                 <div class="row">
                     <div class="col-12">
                         <div class="mobile-card">
-                            <div class="mobile-chart-header">
-                                <h3 class="mobile-chart-title" id="mobileChartDisplayTitle">Gráfico Generado</h3>
-                                <button class="btn btn-sm btn-outline-secondary" onclick="downloadMobileChart()">
-                                    <i class="fas fa-download"></i>
-                                </button>
-                            </div>
+        <div class="mobile-chart-header">
+            <h3 class="mobile-chart-title" id="mobileChartDisplayTitle">Gráfico Generado</h3>
+            <div class="mobile-chart-actions">
+                <div class="btn-group" role="group">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="exportMobileChart('png')" title="Exportar PNG">
+                        <i class="fas fa-image"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="exportMobileChart('pdf')" title="Exportar PDF">
+                        <i class="fas fa-file-pdf"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="downloadMobileChart()" title="Descargar datos">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+                <button class="btn btn-sm btn-success ms-2" onclick="showMobileSaveModal()" title="Guardar análisis" id="saveAnalysisBtn">
+                    <i class="fas fa-save"></i>
+                </button>
+            </div>
+        </div>
                             <div class="mobile-chart-container" id="mobileChartContainer">
                                 <!-- El gráfico se mostrará aquí -->
                             </div>
@@ -278,9 +290,54 @@
         </div>
     </div>
 
+    <!-- Modal para guardar análisis -->
+    <div class="modal fade" id="mobileSaveAnalysisModal" tabindex="-1" aria-labelledby="mobileSaveAnalysisModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content mobile-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title mobile-modal-title" id="mobileSaveAnalysisModalLabel">
+                        <i class="fas fa-save me-2"></i>Guardar Análisis
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="mobileSaveAnalysisForm">
+                        <div class="mb-3">
+                            <label for="mobileAnalysisName" class="form-label mobile-form-label">
+                                <i class="fas fa-tag me-1"></i>Nombre del Análisis
+                            </label>
+                            <input type="text" class="form-control mobile-form-control" id="mobileAnalysisName" 
+                                   placeholder="Ej: Análisis de Proyecciones 2024" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="mobileAnalysisDescription" class="form-label mobile-form-label">
+                                <i class="fas fa-align-left me-1"></i>Descripción (opcional)
+                            </label>
+                            <textarea class="form-control mobile-form-control" id="mobileAnalysisDescription" 
+                                      rows="3" placeholder="Descripción del análisis..."></textarea>
+                        </div>
+                        <div class="alert alert-info mobile-alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <small>Este análisis se guardará en tu historial y podrás acceder a él desde la sección principal.</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-success" id="mobileConfirmSaveAnalysis">
+                        <i class="fas fa-save me-1"></i>Guardar Análisis
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="{{ url_for('static', filename='js/mobile.js') }}"></script>
 </body>
 </html>
