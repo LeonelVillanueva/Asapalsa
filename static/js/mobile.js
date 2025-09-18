@@ -1862,6 +1862,7 @@ function saveMobileAnalysis() {
         name: name,
         description: description || `Análisis móvil - ${getChartTypeName(mobileChartType)}`,
         file_name: 'Archivo móvil',
+        platform: 'mobile',
         data_summary: mobileData,
         chart_data: {
             type: mobileChartType,

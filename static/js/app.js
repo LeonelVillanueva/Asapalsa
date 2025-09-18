@@ -362,12 +362,16 @@ class ASAPALSAnalytics {
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
+                const href = this.getAttribute('href');
+                // Solo procesar si el href no es solo '#'
+                if (href && href !== '#') {
+                    const target = document.querySelector(href);
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
                 }
             });
         });
@@ -1625,7 +1629,10 @@ class ASAPALSAnalytics {
                 this.loadAdvancedStatistics();
                 break;
             case 'reports-section':
-                this.loadGeneratedReports();
+                // Pequeño delay para asegurar que la sección se mantenga visible
+                setTimeout(() => {
+                    this.loadGeneratedReports();
+                }, 100);
                 break;
         }
     }
@@ -2029,7 +2036,8 @@ class ASAPALSAnalytics {
                 body: JSON.stringify({
                     name: name,
                     description: description,
-                    file_name: this.currentFileName || 'archivo.csv'
+                    file_name: this.currentFileName || 'archivo.csv',
+                    platform: 'web'
                 })
             });
 
@@ -2348,7 +2356,7 @@ class ASAPALSAnalytics {
     async generateSimpleReport() {
         try {
             const reportType = document.querySelector('input[name="reportType"]:checked').value;
-            const reportTitle = document.getElementById('simpleReportTitle').value || 'Reporte Ejecutivo de Análisis';
+            const reportTitle = 'Reporte Ejecutivo de Análisis';
             
             if (reportType === 'current') {
                 await this.generateCurrentChartReport(reportTitle);
@@ -2444,6 +2452,15 @@ class ASAPALSAnalytics {
         // Obtener todos los tipos de gráficos disponibles
         const chartTypes = ['line', 'bar', 'comparison', 'precision', 'difference', 'scatter', 'radar'];
         let chartCount = 0;
+        let totalCharts = 0;
+        
+        // Contar primero cuántos gráficos están disponibles
+        for (const chartType of chartTypes) {
+            const chartBtn = document.querySelector(`[data-chart="${chartType}"]`);
+            if (chartBtn && !chartBtn.classList.contains('disabled')) {
+                totalCharts++;
+            }
+        }
         
         for (const chartType of chartTypes) {
             try {
@@ -2499,7 +2516,7 @@ class ASAPALSAnalytics {
                 pdf.setFontSize(14);
                 pdf.text(`${reportTitle} - ${this.getChartTitle(chartType)}`, 20, 30);
                 pdf.setFontSize(10);
-                pdf.text(`Página ${chartCount + 1} de ${chartTypes.length}`, 20, 40);
+                pdf.text(`Página ${chartCount + 1} de ${totalCharts}`, 20, 40);
                 
                 // Agregar gráfico
                 const imgData = tempCanvas.toDataURL('image/png');
@@ -2562,14 +2579,16 @@ class ASAPALSAnalytics {
     async loadGeneratedReports() {
         try {
             // Obtener análisis guardados del historial
-            const response = await fetch('/api/get-analysis-history');
-            const analyses = await response.json();
+            const response = await fetch('/api/history?platform=web');
+            const result = await response.json();
             
-            if (analyses.error) {
-                this.showAlert(analyses.error, 'error');
+            if (!result.success) {
+                this.showAlert(result.message || 'Error al cargar reportes', 'error');
                 return;
             }
             
+            // Extraer los datos del historial
+            const analyses = result.data || [];
             this.renderGeneratedReports(analyses);
         } catch (error) {
             this.showAlert('Error al cargar reportes generados: ' + error.message, 'error');
@@ -2580,15 +2599,16 @@ class ASAPALSAnalytics {
         const reportsSection = document.getElementById('reports-section');
         if (!reportsSection) return;
         
-        const reportsContainer = reportsSection.querySelector('.reports-container');
+        let reportsContainer = reportsSection.querySelector('.reports-container');
         if (!reportsContainer) {
             // Crear contenedor si no existe
-            const container = document.createElement('div');
-            container.className = 'reports-container';
-            reportsSection.appendChild(container);
+            reportsContainer = document.createElement('div');
+            reportsContainer.className = 'reports-container';
+            reportsSection.appendChild(reportsContainer);
         }
         
         if (!analyses || analyses.length === 0) {
+            // Mostrar mensaje de no hay reportes sin ocultar la sección
             reportsContainer.innerHTML = `
                 <div class="text-center py-5">
                     <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>

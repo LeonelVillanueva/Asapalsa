@@ -21,6 +21,10 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 import subprocess
 import tempfile
+import signal
+import atexit
+import threading
+import time
 
 # Cargar variables de entorno desde .env
 load_dotenv()
@@ -42,6 +46,82 @@ if GEMINI_API_KEY and GEMINI_API_KEY != 'tu_api_key_aqui':
         ai_model = None
 else:
     ai_model = None
+
+# Lista para rastrear procesos activos
+active_processes = []
+
+def cleanup_processes():
+    """Limpiar procesos activos al cerrar la aplicación"""
+    global active_processes
+    for process in active_processes:
+        try:
+            if process.poll() is None:  # Si el proceso aún está ejecutándose
+                process.terminate()
+                process.wait(timeout=5)
+        except Exception as e:
+            print(f"⚠️ Error terminando proceso: {e}")
+    active_processes.clear()
+
+def safe_subprocess_run(*args, **kwargs):
+    """Ejecutar subprocess de forma segura"""
+    proc = None
+    try:
+        # Agregar flags para evitar ventanas en Windows
+        if os.name == 'nt':
+            kwargs.setdefault('creationflags', subprocess.CREATE_NO_WINDOW)
+        
+        # Reducir timeout por defecto para evitar procesos colgados
+        kwargs.setdefault('timeout', 30)
+        
+        # Ejecutar el proceso
+        result = subprocess.run(*args, **kwargs)
+        
+        # Limpiar inmediatamente después de la ejecución
+        if hasattr(result, 'stdout'):
+            if hasattr(result.stdout, 'close'):
+                try:
+                    result.stdout.close()
+                except:
+                    pass
+        if hasattr(result, 'stderr'):
+            if hasattr(result.stderr, 'close'):
+                try:
+                    result.stderr.close()
+                except:
+                    pass
+        
+        return result
+    except subprocess.TimeoutExpired as e:
+        print(f"⚠️ Subprocess timeout: {e}")
+        if proc and proc.poll() is None:
+            try:
+                proc.terminate()
+                proc.wait(timeout=2)
+            except:
+                try:
+                    proc.kill()
+                except:
+                    pass
+        return None
+    except Exception as e:
+        print(f"⚠️ Error en subprocess: {e}")
+        return None
+
+# Registrar función de limpieza
+atexit.register(cleanup_processes)
+
+# Manejar señales de terminación
+def signal_handler(signum, frame):
+    """Manejar señales de terminación"""
+    print(f"\n🛑 Señal {signum} recibida. Limpiando procesos...")
+    cleanup_processes()
+    exit(0)
+
+# Registrar manejadores de señales
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
+
+if not ai_model:
     print("ℹ️ Google Gemini no configurado - usando análisis local")
 
 # Función para detectar dispositivos móviles
@@ -134,9 +214,24 @@ def init_db():
             file_name TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             data_summary TEXT,
-            chart_data TEXT
+            chart_data TEXT,
+            platform TEXT DEFAULT 'web'
         )
     ''')
+    
+    # Migración: agregar columna platform si no existe
+    try:
+        cursor.execute('ALTER TABLE analysis_history ADD COLUMN platform TEXT DEFAULT "web"')
+        print("✅ Columna 'platform' agregada a la tabla analysis_history")
+    except sqlite3.OperationalError as e:
+        if "duplicate column name" in str(e).lower():
+            print("ℹ️ Columna 'platform' ya existe en analysis_history")
+        else:
+            print(f"⚠️ Error al agregar columna platform: {e}")
+    
+    # Actualizar registros existentes sin plataforma
+    cursor.execute('UPDATE analysis_history SET platform = "web" WHERE platform IS NULL')
+    conn.commit()
     
     # Crear tabla de alertas
     cursor.execute('''
@@ -166,7 +261,7 @@ def init_db():
     conn.commit()
     conn.close()
 
-def save_analysis(name, description, file_name, data_summary, chart_data):
+def save_analysis(name, description, file_name, data_summary, chart_data, platform='web'):
     """Guardar un análisis en el historial"""
     analysis_id = str(uuid.uuid4())
     conn = sqlite3.connect(DATABASE)
@@ -174,24 +269,25 @@ def save_analysis(name, description, file_name, data_summary, chart_data):
     
     cursor.execute('''
         INSERT INTO analysis_history 
-        (id, name, description, file_name, data_summary, chart_data)
-        VALUES (?, ?, ?, ?, ?, ?)
+        (id, name, description, file_name, data_summary, chart_data, platform)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     ''', (analysis_id, name, description, file_name, 
-          json.dumps(data_summary), json.dumps(chart_data)))
+          json.dumps(data_summary), json.dumps(chart_data), platform))
     
     conn.commit()
     conn.close()
     return analysis_id
 
-def get_analysis_history():
-    """Obtener todo el historial de análisis"""
+def get_analysis_history(platform='web'):
+    """Obtener el historial de análisis filtrado por plataforma"""
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
     cursor.execute('''
         SELECT id, name, description, file_name, created_at, data_summary
         FROM analysis_history 
+        WHERE platform = ?
         ORDER BY created_at DESC
-    ''')
+    ''', (platform,))
     results = cursor.fetchall()
     conn.close()
     
@@ -312,17 +408,17 @@ def validate_csv_structure(df, file_path):
         
         # 8. Validación adicional con csvkit si está disponible
         try:
-            result = subprocess.run([
+            result = safe_subprocess_run([
                 'csvstat', 
                 '--count',
                 file_path
             ], capture_output=True, text=True, timeout=10)
             
-            if result.returncode == 0:
+            if result and result.returncode == 0:
                 warnings.append("Validación adicional con csvkit completada")
                 print("✅ csvstat ejecutado exitosamente")
             else:
-                print(f"⚠️ csvstat no disponible: {result.stderr}")
+                print(f"⚠️ csvstat no disponible: {result.stderr if result else 'Proceso falló'}")
                 
         except (subprocess.TimeoutExpired, FileNotFoundError, Exception) as e:
             print(f"⚠️ csvstat no disponible: {e}")
@@ -415,7 +511,8 @@ def repair_csv_with_csvkit(file_path):
                 '--encoding', 'utf-8',
                 '--output', temp_path,
                 file_path
-            ], capture_output=True, text=True, timeout=30)
+            ], capture_output=True, text=True, timeout=30,
+               creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
             
             if result.returncode == 0:
                 repairs_made.append("Archivo limpiado con csvclean")
@@ -477,7 +574,8 @@ def diagnose_csv_with_csvkit(file_path):
         # 1. Verificar si csvkit está disponible
         try:
             result = subprocess.run(['csvstat', '--version'], 
-                                  capture_output=True, text=True, timeout=5)
+                                  capture_output=True, text=True, timeout=5,
+                                  creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
             if result.returncode == 0:
                 diagnosis['csvkit_available'] = True
                 diagnosis['csvkit_version'] = result.stdout.strip()
@@ -496,7 +594,8 @@ def diagnose_csv_with_csvkit(file_path):
                 '--count',
                 '--columns',
                 file_path
-            ], capture_output=True, text=True, timeout=10)
+            ], capture_output=True, text=True, timeout=10,
+               creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
             
             if result.returncode == 0:
                 diagnosis['file_info'] = {
@@ -516,7 +615,8 @@ def diagnose_csv_with_csvkit(file_path):
                 '--freq',
                 '--len',
                 file_path
-            ], capture_output=True, text=True, timeout=15)
+            ], capture_output=True, text=True, timeout=15,
+               creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
             
             if result.returncode == 0:
                 diagnosis['statistics'] = {
@@ -1560,6 +1660,7 @@ def save_analysis_api():
     name = data.get('name', f'Análisis {datetime.now().strftime("%Y-%m-%d %H:%M")}')
     description = data.get('description', '')
     file_name = data.get('file_name', 'archivo.csv')
+    platform = data.get('platform', 'web')  # Detectar plataforma desde el request
     
     # Crear resumen de datos
     data_summary = {
@@ -1575,13 +1676,13 @@ def save_analysis_api():
     
     # Crear datos de gráficos para todos los tipos
     chart_data = {}
-    for chart_type in ['line', 'bar', 'comparison', 'precision', 'difference']:
+    for chart_type in ['line', 'bar', 'comparison', 'precision', 'difference', 'scatter', 'radar']:
         chart_config = get_chart_data(chart_type)
         if chart_config:
             chart_data[chart_type] = chart_config
     
     try:
-        analysis_id = save_analysis(name, description, file_name, data_summary, chart_data)
+        analysis_id = save_analysis(name, description, file_name, data_summary, chart_data, platform)
         return jsonify({
             'success': True, 
             'message': 'Análisis guardado correctamente',
@@ -1592,10 +1693,18 @@ def save_analysis_api():
 
 @app.route('/api/history')
 def get_history():
-    """Obtener el historial de análisis"""
+    """Obtener el historial de análisis filtrado por plataforma"""
     try:
-        history = get_analysis_history()
-        return jsonify({'success': True, 'data': history})
+        # Detectar plataforma desde el User-Agent o parámetro
+        platform = request.args.get('platform', 'web')
+        user_agent = request.headers.get('User-Agent', '').lower()
+        
+        # Si el User-Agent indica móvil, usar 'mobile'
+        if 'mobile' in user_agent or 'android' in user_agent or 'iphone' in user_agent:
+            platform = 'mobile'
+        
+        history = get_analysis_history(platform)
+        return jsonify({'success': True, 'data': history, 'platform': platform})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error al obtener historial: {str(e)}'})
 

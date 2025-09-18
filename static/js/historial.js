@@ -30,7 +30,7 @@ class HistorialManager {
 
     async loadHistorial() {
         try {
-            const response = await fetch('/api/history');
+            const response = await fetch('/api/history?platform=web');
             const result = await response.json();
 
             if (result.success) {
@@ -75,7 +75,7 @@ class HistorialManager {
         return `
             <div class="col-lg-4 col-md-6 mb-4">
                 <div class="card h-100 analysis-card" data-analysis-id="${analysis.id}">
-                    <div class="card-header bg-primary text-white">
+                    <div class="card-header text-white" style="background-color: var(--asapalsa-green);">
                         <h6 class="card-title mb-0">
                             <i class="fas fa-chart-bar me-2"></i>
                             ${analysis.name}
@@ -91,7 +91,7 @@ class HistorialManager {
                         
                         <div class="row text-center mb-3">
                             <div class="col-6">
-                                <div class="metric-value text-primary">${totalRecords.toLocaleString()}</div>
+                                <div class="metric-value" style="color: var(--asapalsa-green);">${totalRecords.toLocaleString()}</div>
                                 <div class="metric-label">Registros</div>
                             </div>
                             <div class="col-6">
@@ -106,7 +106,7 @@ class HistorialManager {
                         </div>
                     </div>
                     <div class="card-footer bg-transparent">
-                        <button class="btn btn-primary btn-sm w-100 view-analysis-btn" data-analysis-id="${analysis.id}">
+                        <button class="btn btn-sm w-100 view-analysis-btn" data-analysis-id="${analysis.id}" style="background-color: var(--asapalsa-green); color: white; border-color: var(--asapalsa-green);">
                             <i class="fas fa-eye me-2"></i>
                             Ver Análisis
                         </button>
@@ -168,8 +168,12 @@ class HistorialManager {
 
     loadChartInModal(chartType) {
         if (!this.currentAnalysis || !this.currentAnalysis.chart_data) {
+            console.log('❌ No hay análisis actual o datos de gráficos');
             return;
         }
+
+        console.log('🔍 Cargando gráfico:', chartType);
+        console.log('📊 Datos del análisis:', this.currentAnalysis.chart_data);
 
         // Verificar si el gráfico está disponible
         const chartBtn = document.querySelector(`.chart-type-btn[data-chart="${chartType}"]`);
@@ -179,7 +183,10 @@ class HistorialManager {
         }
 
         const chartData = this.currentAnalysis.chart_data[chartType];
+        console.log('📈 Datos del gráfico específico:', chartData);
+        
         if (!chartData || chartData.error) {
+            console.log('❌ Error en datos del gráfico:', chartData?.error);
             this.showError('Gráfico no disponible para este análisis');
             return;
         }
@@ -191,50 +198,62 @@ class HistorialManager {
             this.modalChart.destroy();
         }
 
-        // Crear nuevo gráfico
-        this.modalChart = new Chart(ctx, {
+        console.log('🎨 Creando gráfico con configuración:', {
             type: chartData.type,
             data: chartData.data,
-            options: {
-                ...chartData.options,
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    ...chartData.options.plugins,
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            usePointStyle: true,
-                            padding: 20,
-                            font: {
-                                size: 12
+            options: chartData.options
+        });
+
+        try {
+            // Crear nuevo gráfico
+            this.modalChart = new Chart(ctx, {
+                type: chartData.type,
+                data: chartData.data,
+                options: {
+                    ...chartData.options,
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        ...chartData.options.plugins,
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: {
+                                    size: 12
+                                }
                             }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleColor: 'white',
+                            bodyColor: 'white',
+                            borderColor: '#ddd',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            displayColors: true
                         }
                     },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        backgroundColor: 'rgba(0,0,0,0.8)',
-                        titleColor: 'white',
-                        bodyColor: 'white',
-                        borderColor: '#ddd',
-                        borderWidth: 1,
-                        cornerRadius: 8,
-                        displayColors: true
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
                     }
-                },
-                interaction: {
-                    mode: 'nearest',
-                    axis: 'x',
-                    intersect: false
-                },
-                animation: {
-                    duration: 1000,
-                    easing: 'easeInOutQuart'
                 }
-            }
-        });
+            });
+            console.log('✅ Gráfico creado exitosamente');
+        } catch (error) {
+            console.error('❌ Error al crear gráfico:', error);
+            this.showError('Error al crear el gráfico: ' + error.message);
+        }
     }
 
     updateActiveChartButton(activeBtn) {

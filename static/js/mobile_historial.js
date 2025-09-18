@@ -41,7 +41,7 @@ class MobileHistorialManager {
     async loadHistorial() {
         try {
             this.showLoading(true);
-            const response = await fetch('/api/history');
+            const response = await fetch('/api/history?platform=mobile');
             const result = await response.json();
 
             if (result.success) {

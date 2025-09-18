@@ -1468,6 +1468,24 @@ body {
 }
 
 .chart-type-btn.active {
+    background-color: var(--asapalsa-green) !important;
+    color: white !important;
+    border-color: var(--asapalsa-green) !important;
+}
+
+.chart-type-btn:hover {
+    background-color: var(--asapalsa-green-light);
+    color: white;
+    border-color: var(--asapalsa-green-light);
+}
+
+/* Asegurar que los botones outline-success usen la paleta ASAPALSA */
+.btn-outline-success {
+    color: var(--asapalsa-green);
+    border-color: var(--asapalsa-green);
+}
+
+.btn-outline-success:hover {
     background-color: var(--asapalsa-green);
     color: white;
     border-color: var(--asapalsa-green);
@@ -1492,6 +1510,13 @@ body {
 /* Analysis Card Grid */
 #historialGrid .col-lg-4 {
     margin-bottom: 2rem;
+}
+
+/* Botones de tarjetas de análisis */
+.view-analysis-btn:hover {
+    background-color: var(--asapalsa-green-light) !important;
+    color: white !important;
+    border-color: var(--asapalsa-green-light) !important;
 }
 
 /* Responsive adjustments for historial */
