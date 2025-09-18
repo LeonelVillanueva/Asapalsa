@@ -9,6 +9,8 @@ class ASAPALSAnalytics {
         this.currentFileName = null;
         this.debounceTimers = {};
         this.intersectionObserver = null;
+        this.currentDataSummary = null;
+        this.currentChartData = null;
         
         this.init();
     }
@@ -46,6 +48,11 @@ class ASAPALSAnalytics {
         // Save analysis button
         document.getElementById('saveAnalysisBtn').addEventListener('click', () => {
             this.showSaveModal();
+        });
+
+        // Intelligent analysis button
+        document.getElementById('intelligentAnalysisBtn').addEventListener('click', () => {
+            this.showIntelligentAnalysisModal();
         });
 
         // Confirm save analysis
@@ -272,8 +279,9 @@ class ASAPALSAnalytics {
         summarySection.style.display = 'block';
         summarySection.classList.add('fade-in');
         
-        // Mostrar botón de guardar análisis
-        document.getElementById('saveAnalysisBtn').style.display = 'block';
+        // Mostrar botones de análisis
+        document.getElementById('intelligentAnalysisBtn').style.display = 'inline-block';
+        document.getElementById('saveAnalysisBtn').style.display = 'inline-block';
         
         // Mostrar botones de navegación para secciones adicionales
         this.showAdditionalSections();
@@ -389,6 +397,13 @@ class ASAPALSAnalytics {
                 return;
             }
 
+            // Almacenar datos del gráfico para análisis inteligente
+            this.currentChartData = {
+                type: chartType,
+                title: chartConfig.data?.labels?.[0] || `Gráfico de ${chartType}`,
+                config: chartConfig
+            };
+
             this.renderChart(chartConfig);
             this.updateChartTitle(chartType);
             
@@ -401,7 +416,8 @@ class ASAPALSAnalytics {
     }
 
     async updateChartAvailability() {
-        const chartTypes = ['line', 'bar', 'comparison', 'precision', 'difference', 'scatter', 'radar'];
+        // Gráficos disponibles - excluyendo precision y difference que causan errores 400
+        const chartTypes = ['line', 'bar', 'comparison', 'scatter', 'radar'];
         let availableCount = 0;
         
         for (const chartType of chartTypes) {
@@ -617,6 +633,9 @@ class ASAPALSAnalytics {
                 return;
             }
 
+            // Almacenar resumen para análisis inteligente
+            this.currentDataSummary = summary;
+
             this.renderSummaryCards(summary);
         } catch (error) {
             this.showAlert('Error al cargar el resumen: ' + error.message, 'danger');
@@ -779,27 +798,88 @@ class ASAPALSAnalytics {
     }
 
     showAlert(message, type) {
-        // Remove existing alerts
+        // Remove existing alerts smoothly
         const existingAlerts = document.querySelectorAll('.alert-temp');
-        existingAlerts.forEach(alert => alert.remove());
+        existingAlerts.forEach(alert => {
+            alert.style.opacity = '0';
+            alert.style.transform = 'translateX(100%)';
+            setTimeout(() => alert.remove(), 300);
+        });
 
-        // Create new alert
+        // Create new alert with smooth animation
         const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-temp alert-dismissible fade show position-fixed`;
-        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alertDiv.className = `alert alert-${type} alert-temp alert-dismissible fade show position-fixed smooth-notification`;
+        alertDiv.style.cssText = `
+            top: 20px; 
+            right: -400px; 
+            z-index: 9999; 
+            min-width: 300px; 
+            max-width: 400px;
+            opacity: 0;
+            transform: translateX(0);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            border: none;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        `;
+        
+        // Personalizar colores según el tipo
+        const typeColors = {
+            'success': 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+            'danger': 'linear-gradient(135deg, #dc3545 0%, #e74c3c 100%)',
+            'warning': 'linear-gradient(135deg, #ffc107 0%, #fd7e14 100%)',
+            'info': 'linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%)',
+            'error': 'linear-gradient(135deg, #dc3545 0%, #e74c3c 100%)'
+        };
+        
+        alertDiv.style.background = typeColors[type] || typeColors['info'];
+        alertDiv.style.color = 'white';
+        alertDiv.style.fontWeight = '500';
+        
         alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="d-flex align-items-center">
+                <div class="notification-icon me-3 flex-shrink-0">
+                    ${this.getNotificationIcon(type)}
+                </div>
+                <div class="notification-message flex-grow-1 me-3">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close flex-shrink-0" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            </div>
         `;
 
         document.body.appendChild(alertDiv);
 
-        // Auto-remove after 5 seconds
+        // Animate in
+        setTimeout(() => {
+            alertDiv.style.right = '20px';
+            alertDiv.style.opacity = '1';
+        }, 50);
+
+        // Auto-remove after 4 seconds with smooth animation
         setTimeout(() => {
             if (alertDiv.parentNode) {
-                alertDiv.remove();
+                alertDiv.style.opacity = '0';
+                alertDiv.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (alertDiv.parentNode) {
+                        alertDiv.remove();
+                    }
+                }, 400);
             }
-        }, 5000);
+        }, 4000);
+    }
+
+    getNotificationIcon(type) {
+        const icons = {
+            'success': '<i class="fas fa-check-circle"></i>',
+            'danger': '<i class="fas fa-exclamation-triangle"></i>',
+            'warning': '<i class="fas fa-exclamation-circle"></i>',
+            'info': '<i class="fas fa-info-circle"></i>',
+            'error': '<i class="fas fa-times-circle"></i>'
+        };
+        return icons[type] || icons['info'];
     }
 
     // Métodos de exportación
@@ -1222,6 +1302,115 @@ class ASAPALSAnalytics {
         }
     }
 
+    async loadGeneratedReports() {
+        try {
+            // Obtener análisis guardados del historial
+            const response = await fetch('/api/get-analysis-history');
+            const analyses = await response.json();
+            
+            if (analyses.error) {
+                this.showAlert(analyses.error, 'error');
+                return;
+            }
+            
+            this.renderGeneratedReports(analyses);
+        } catch (error) {
+            this.showAlert('Error al cargar reportes generados: ' + error.message, 'error');
+        }
+    }
+
+    renderGeneratedReports(analyses) {
+        const reportsSection = document.getElementById('reports-section');
+        if (!reportsSection) return;
+        
+        const reportsContainer = reportsSection.querySelector('.reports-container');
+        if (!reportsContainer) {
+            // Crear contenedor si no existe
+            const container = document.createElement('div');
+            container.className = 'reports-container';
+            reportsSection.appendChild(container);
+        }
+        
+        if (!analyses || analyses.length === 0) {
+            reportsContainer.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No hay reportes generados</h5>
+                    <p class="text-muted">Los análisis guardados aparecerán aquí</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Renderizar reportes
+        reportsContainer.innerHTML = `
+            <div class="row">
+                ${analyses.map(analysis => this.createReportCard(analysis)).join('')}
+            </div>
+        `;
+    }
+
+    createReportCard(analysis) {
+        const date = new Date(analysis.created_at).toLocaleDateString('es-ES');
+        const dataSummary = typeof analysis.data_summary === 'string' 
+            ? JSON.parse(analysis.data_summary) 
+            : analysis.data_summary;
+        
+        return `
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 report-card">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-file-alt me-2"></i>
+                            ${this.escapeHtml(analysis.name)}
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text text-muted small">
+                            ${this.escapeHtml(analysis.description || 'Sin descripción')}
+                        </p>
+                        <div class="report-stats">
+                            <div class="stat-item">
+                                <i class="fas fa-database text-primary"></i>
+                                <span>${dataSummary?.total_records || 0} registros</span>
+                            </div>
+                            <div class="stat-item">
+                                <i class="fas fa-weight text-success"></i>
+                                <span>${dataSummary?.total_tonnage?.toLocaleString() || 0} T.M.</span>
+                            </div>
+                        </div>
+                        <div class="report-meta mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i>
+                                ${date}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-outline-primary btn-sm" onclick="app.viewReport(${analysis.id})">
+                                <i class="fas fa-eye me-1"></i> Ver
+                            </button>
+                            <button class="btn btn-outline-success btn-sm" onclick="app.exportReport(${analysis.id})">
+                                <i class="fas fa-download me-1"></i> Exportar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    viewReport(analysisId) {
+        // Navegar al historial para ver el análisis
+        window.location.href = '/historial';
+    }
+
+    exportReport(analysisId) {
+        // Implementar exportación de reporte
+        this.showAlert('Función de exportación en desarrollo', 'info');
+    }
+
     async loadCorrelations() {
         try {
             const response = await fetch('/api/statistics/correlations');
@@ -1569,6 +1758,322 @@ class ASAPALSAnalytics {
             this.showAlert('Error al obtener estadísticas de caché', 'error');
         });
     }
+
+    // ===============================
+    // ANÁLISIS INTELIGENTE CON IA
+    // ===============================
+    
+    async generateIntelligentAnalysis() {
+        if (!this.currentDataSummary || !this.currentChartData) {
+            console.warn('No hay datos para generar análisis inteligente');
+            return null;
+        }
+        
+        try {
+            const response = await fetch('/api/generate-intelligent-analysis', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    dataSummary: this.currentDataSummary,
+                    chartData: this.currentChartData,
+                    analysisName: 'Análisis Web Avanzado'
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                return result.analysis;
+            } else {
+                console.log('IA no disponible, usando análisis local');
+                return this.generateLocalAnalysis();
+            }
+        } catch (error) {
+            console.error('Error generando análisis inteligente:', error);
+            return this.generateLocalAnalysis();
+        }
+    }
+    
+    generateLocalAnalysis() {
+        const dataSummary = this.currentDataSummary;
+        const chartData = this.currentChartData;
+        
+        if (!dataSummary) return 'No hay datos disponibles para análisis.';
+        
+        const totalRecords = dataSummary.total_records || 0;
+        const totalTonnage = dataSummary.total_tonnage || 0;
+        const monthlyAverage = dataSummary.monthly_average || 0;
+        const dateRange = dataSummary.date_range;
+        
+        // Análisis de densidad de datos
+        const dataDensity = totalRecords > 100 ? 'alta densidad' : totalRecords > 50 ? 'densidad moderada' : 'datos concentrados';
+        
+        // Análisis de productividad
+        let productivityLevel = '';
+        let productivityInsight = '';
+        if (monthlyAverage > 0) {
+            if (monthlyAverage > 2000) {
+                productivityLevel = 'excepcional';
+                productivityInsight = 'indicando una operación de clase mundial con procesos altamente optimizados';
+            } else if (monthlyAverage > 1000) {
+                productivityLevel = 'alta';
+                productivityInsight = 'demostrando eficiencia operacional sólida y gestión efectiva de recursos';
+            } else if (monthlyAverage > 500) {
+                productivityLevel = 'moderada';
+                productivityInsight = 'sugiriendo oportunidades de optimización y mejora en procesos';
+            } else {
+                productivityLevel = 'baja';
+                productivityInsight = 'revelando la necesidad de revisión estratégica y mejoras operacionales significativas';
+            }
+        }
+        
+        // Análisis temporal
+        let temporalInsight = '';
+        if (dateRange && dateRange.start && dateRange.end) {
+            const startDate = new Date(dateRange.start);
+            const endDate = new Date(dateRange.end);
+            const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+            const monthsDiff = Math.ceil(daysDiff / 30);
+            
+            if (monthsDiff > 12) {
+                temporalInsight = `El análisis abarca ${monthsDiff} meses, proporcionando una visión a largo plazo`;
+            } else if (monthsDiff > 6) {
+                temporalInsight = `Cubriendo ${monthsDiff} meses, el análisis captura tendencias estacionales`;
+            } else {
+                temporalInsight = `Con ${monthsDiff} meses de datos, se identifican patrones a corto plazo`;
+            }
+        }
+        
+        // Análisis específico por tipo de gráfico
+        let chartSpecificInsight = '';
+        const chartType = chartData?.type || this.currentChartType;
+        if (chartType === 'line') {
+            chartSpecificInsight = 'Las tendencias temporales revelan la evolución del rendimiento y permiten identificar patrones de crecimiento, declive o estabilidad';
+        } else if (chartType === 'bar') {
+            chartSpecificInsight = 'La comparación entre categorías identifica segmentos de alto y bajo rendimiento, facilitando la toma de decisiones estratégicas';
+        } else if (chartType === 'pie') {
+            chartSpecificInsight = 'La composición porcentual destaca los componentes dominantes del sistema y su contribución relativa';
+        } else if (chartType === 'scatter') {
+            chartSpecificInsight = 'Las correlaciones entre variables explican el comportamiento del sistema y revelan relaciones causales';
+        } else if (chartType === 'histogram') {
+            chartSpecificInsight = 'La distribución de frecuencias identifica los rangos de valores más comunes y patrones de concentración';
+        }
+        
+        // Construir análisis inteligente
+        let analysis = `Análisis de ${dataDensity} con ${totalRecords.toLocaleString()} registros procesando ${totalTonnage.toLocaleString()} T.M. `;
+        
+        if (temporalInsight) {
+            analysis += `${temporalInsight.toLowerCase()}. `;
+        }
+        
+        if (productivityLevel && productivityInsight) {
+            analysis += `La productividad ${productivityLevel} (${monthlyAverage.toLocaleString()} T.M./mes) ${productivityInsight}. `;
+        }
+        
+        analysis += chartSpecificInsight ? `${chartSpecificInsight}. ` : 'Proporcionando insights valiosos para la toma de decisiones.';
+        
+        return analysis;
+    }
+    
+    async showIntelligentAnalysisModal() {
+        const modal = document.getElementById('intelligentAnalysisModal');
+        
+        if (!modal) {
+            this.showAlert('Error: Modal de análisis inteligente no encontrado', 'danger');
+            return;
+        }
+        
+        // Mostrar loading
+        const modalBody = document.getElementById('intelligentAnalysisContent');
+        if (modalBody) {
+            modalBody.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Generando análisis...</span>
+                    </div>
+                    <p class="mt-3">Generando análisis inteligente...</p>
+                </div>
+            `;
+        }
+        
+        // Inicializar y mostrar modal de forma segura
+        try {
+            // Verificar si ya existe una instancia del modal
+            let bootstrapModal = bootstrap.Modal.getInstance(modal);
+            if (!bootstrapModal) {
+                // Crear nueva instancia con configuración explícita
+                bootstrapModal = new bootstrap.Modal(modal, {
+                    backdrop: true,
+                    keyboard: true,
+                    focus: true
+                });
+            }
+            bootstrapModal.show();
+        } catch (error) {
+            console.error('Error inicializando modal:', error);
+            // Fallback: mostrar alerta simple
+            this.showAlert('Error al abrir el análisis inteligente', 'danger');
+            return;
+        }
+        
+        // Generar análisis
+        try {
+            const analysis = await this.generateIntelligentAnalysis();
+            
+            // Actualizar contenido
+            modalBody.innerHTML = `
+                <div class="intelligent-analysis-content">
+                    <div class="analysis-header mb-4">
+                        <h5 class="analysis-title">
+                            <i class="fas fa-brain me-2 text-primary"></i>
+                            Análisis Inteligente
+                        </h5>
+                        <div class="analysis-meta">
+                            <small class="text-muted">
+                                <i class="fas fa-chart-${this.getChartIcon(this.currentChartType)} me-1"></i>
+                                ${this.getChartTypeName(this.currentChartType)}
+                                • ${new Date().toLocaleString('es-ES')}
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="analysis-body">
+                        <div class="analysis-text">
+                            <p class="lead">${analysis}</p>
+                        </div>
+                        
+                        <div class="analysis-recommendations mt-4">
+                            <h6 class="recommendations-title">
+                                <i class="fas fa-lightbulb me-2 text-warning"></i>
+                                Recomendaciones Estratégicas
+                            </h6>
+                            <ul class="recommendations-list">
+                                ${this.generateRecommendations()}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="analysis-actions mt-4">
+                        <button class="btn btn-outline-primary btn-sm" onclick="app.copyAnalysisToClipboard()">
+                            <i class="fas fa-copy me-1"></i> Copiar Análisis
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="app.exportAnalysisAsPDF()">
+                            <i class="fas fa-file-pdf me-1"></i> Exportar PDF
+                        </button>
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Error generando análisis: ${error.message}
+                </div>
+            `;
+        }
+    }
+    
+    
+    getChartIcon(chartType) {
+        const icons = {
+            'line': 'line',
+            'bar': 'bar',
+            'pie': 'pie',
+            'scatter': 'area',
+            'histogram': 'column'
+        };
+        return icons[chartType] || 'line';
+    }
+    
+    getChartTypeName(chartType) {
+        const names = {
+            'line': 'Gráfico de Líneas',
+            'bar': 'Gráfico de Barras',
+            'pie': 'Gráfico Circular',
+            'scatter': 'Gráfico de Dispersión',
+            'histogram': 'Histograma'
+        };
+        return names[chartType] || 'Gráfico';
+    }
+    
+    generateRecommendations() {
+        const dataSummary = this.currentDataSummary;
+        const monthlyAverage = dataSummary?.monthly_average || 0;
+        const totalTonnage = dataSummary?.total_tonnage || 0;
+        
+        let recommendations = [];
+        
+        if (monthlyAverage > 2000) {
+            recommendations.push('Mantener los procesos actuales que han demostrado ser altamente eficientes');
+            recommendations.push('Considerar expansión de operaciones dado el excelente rendimiento');
+        } else if (monthlyAverage > 1000) {
+            recommendations.push('Identificar y replicar las mejores prácticas de los períodos de mayor productividad');
+            recommendations.push('Implementar sistemas de monitoreo en tiempo real para optimizar procesos');
+        } else if (monthlyAverage > 500) {
+            recommendations.push('Revisar procesos operacionales para identificar cuellos de botella');
+            recommendations.push('Implementar programas de mejora continua y capacitación del personal');
+        } else {
+            recommendations.push('Realizar una auditoría operacional completa para identificar problemas críticos');
+            recommendations.push('Desarrollar un plan de recuperación con objetivos específicos y medibles');
+        }
+        
+        // Recomendaciones generales
+        recommendations.push('Establecer métricas de seguimiento mensual para monitorear el progreso');
+        recommendations.push('Implementar alertas automáticas para detectar desviaciones significativas');
+        
+        return recommendations.map(rec => `<li>${rec}</li>`).join('');
+    }
+    
+    async copyAnalysisToClipboard() {
+        const analysisText = document.querySelector('.analysis-text p').textContent;
+        try {
+            await navigator.clipboard.writeText(analysisText);
+            this.showAlert('Análisis copiado al portapapeles', 'success');
+        } catch (error) {
+            this.showAlert('Error al copiar análisis', 'danger');
+        }
+    }
+    
+    async exportAnalysisAsPDF() {
+        try {
+            const analysisText = document.querySelector('.analysis-text p').textContent;
+            const recommendations = Array.from(document.querySelectorAll('.recommendations-list li'))
+                .map(li => li.textContent)
+                .join('\n• ');
+            
+            // Crear contenido para PDF
+            const content = `
+ANÁLISIS INTELIGENTE - ASAPALSA ANALYTICS
+${'='.repeat(50)}
+
+ANÁLISIS:
+${analysisText}
+
+RECOMENDACIONES:
+• ${recommendations}
+
+Fecha: ${new Date().toLocaleString('es-ES')}
+Archivo: ${this.currentFileName}
+            `;
+            
+            // Descargar como archivo de texto (simulación de PDF)
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `analisis_inteligente_${this.currentFileName}_${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            this.showAlert('Análisis exportado correctamente', 'success');
+        } catch (error) {
+            this.showAlert('Error al exportar análisis', 'danger');
+        }
+    }
 }
 
 // Initialize the application when DOM is loaded
@@ -1591,8 +2096,5 @@ function formatDate(date) {
         day: 'numeric'
     }).format(new Date(date));
 }
-
-// Export for potential external use
-window.ASAPALSAnalytics = ASAPALSAnalytics;
 
 

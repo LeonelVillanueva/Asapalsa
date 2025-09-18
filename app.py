@@ -1050,6 +1050,18 @@ def upload_file():
             # Crear directorio si no existe
             os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
             
+            # Manejar archivos duplicados
+            if os.path.exists(file_path):
+                try:
+                    # Intentar eliminar archivo existente
+                    os.remove(file_path)
+                except PermissionError:
+                    # Si no se puede eliminar, usar nombre con timestamp
+                    name, ext = os.path.splitext(filename)
+                    timestamp = int(time.time())
+                    filename = f"{name}_{timestamp}{ext}"
+                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            
             file.save(file_path)
             
             success, message = process_file_data(file_path)
