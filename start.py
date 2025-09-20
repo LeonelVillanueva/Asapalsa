@@ -28,23 +28,16 @@ DEFAULT_HOST = "0.0.0.0"
 
 def print_banner():
     """Mostrar banner de inicio"""
-    print("=" * 80)
     print(f"🌱 {PROJECT_NAME} v{VERSION}")
-    print("   Sistema de Análisis Agroindustrial")
-    print("=" * 80)
 
 def check_python_version():
     """Verificar versión de Python"""
     if sys.version_info < (3, 8):
-        print("❌ ERROR: Se requiere Python 3.8 o superior")
-        print(f"   Versión actual: {sys.version}")
+        print("Error: Se requiere Python 3.8 o superior")
         sys.exit(1)
-    print(f"✅ Python {sys.version.split()[0]} detectado")
 
 def check_dependencies():
     """Verificar e instalar dependencias"""
-    print("🔍 Verificando dependencias...")
-    
     # Lista completa de dependencias necesarias
     all_deps = ['flask', 'pandas', 'matplotlib', 'numpy', 'requests', 'watchdog', 'werkzeug']
     missing_deps = []
@@ -52,33 +45,25 @@ def check_dependencies():
     for dep in all_deps:
         try:
             __import__(dep)
-            print(f"✅ {dep} ya está instalado")
         except ImportError:
             missing_deps.append(dep)
     
     if missing_deps:
-        print(f"📦 Instalando dependencias faltantes: {', '.join(missing_deps)}")
         try:
-            subprocess.check_call([sys.executable, "-m", "pip", "install"] + missing_deps)
-            print("✅ Dependencias instaladas correctamente")
-        except subprocess.CalledProcessError as e:
-            print(f"⚠️  Advertencia: Error instalando algunas dependencias: {e}")
-            print("💡 Intenta instalar manualmente: pip install -r requirements.txt")
-    else:
-        print("✅ Todas las dependencias están instaladas")
+            subprocess.check_call([sys.executable, "-m", "pip", "install"] + missing_deps, 
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except subprocess.CalledProcessError:
+            pass  # Silenciar errores de instalación
 
 def install_requirements():
     """Instalar dependencias desde requirements.txt"""
     requirements_file = Path("requirements.txt")
     if requirements_file.exists():
-        print("📦 Instalando dependencias desde requirements.txt...")
         try:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
-            print("✅ Dependencias instaladas correctamente")
-        except subprocess.CalledProcessError as e:
-            print(f"⚠️  Advertencia: Error instalando requirements.txt: {e}")
-    else:
-        print("ℹ️  No se encontró requirements.txt, usando dependencias básicas")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"],
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except subprocess.CalledProcessError:
+            pass  # Silenciar errores de instalación
 
 def create_directories():
     """Crear directorios necesarios"""
@@ -86,8 +71,6 @@ def create_directories():
     
     for directory in directories:
         Path(directory).mkdir(parents=True, exist_ok=True)
-    
-    print("✅ Directorios del proyecto verificados")
 
 def start_development_server(host, port):
     """Iniciar servidor en modo desarrollo con auto-reload"""
@@ -114,11 +97,7 @@ def start_development_server(host, port):
 
 def start_production_server(host, port):
     """Iniciar servidor en modo producción"""
-    print("🚀 Iniciando servidor de producción...")
-    print(f"🌐 URL: http://{host}:{port}")
-    print("🔧 Modo: Producción")
-    print("🛑 Para detener: Ctrl+C")
-    print("=" * 80)
+    print("🚀 Iniciando servidor...")
     
     # Configurar variables de entorno para producción
     os.environ['FLASK_ENV'] = 'production'
@@ -130,18 +109,13 @@ def start_production_server(host, port):
         from app import app
         app.run(debug=False, host=host, port=port, use_reloader=False)
     except KeyboardInterrupt:
-        print("\n\n👋 ¡Servidor detenido! Gracias por usar ASAPALSA Analytics")
+        pass  # Silenciar mensaje de parada
     except Exception as e:
-        print(f"\n❌ Error al iniciar el servidor: {e}")
-        print("💡 Verifica que el puerto no esté en uso y que todas las dependencias estén instaladas")
+        print(f"Error: {e}")
 
 def show_system_info():
     """Mostrar información del sistema"""
-    print("\n📋 Información del Sistema:")
-    print(f"   • Sistema Operativo: {platform.system()} {platform.release()}")
-    print(f"   • Arquitectura: {platform.machine()}")
-    print(f"   • Python: {sys.version.split()[0]}")
-    print(f"   • Directorio de trabajo: {os.getcwd()}")
+    print(f"Python: {sys.version.split()[0]}")
 
 def main():
     """Función principal"""
@@ -185,11 +159,6 @@ Ejemplos de uso:
     # Instalar dependencias
     install_requirements()
     check_dependencies()
-    
-    # Mostrar información del sistema
-    show_system_info()
-    
-    print("\n" + "=" * 80)
     
     # Iniciar servidor según el modo
     if args.dev:

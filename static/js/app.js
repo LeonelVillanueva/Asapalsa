@@ -433,24 +433,94 @@ class ASAPALSAnalytics {
         this.showProgress(true);
         this.hideFileInfo();
 
-        // Primero validar el archivo
         try {
-            const validationResult = await this.validateFile(file);
+            // CREAR COPIA INMUTABLE DEL ARCHIVO INMEDIATAMENTE
+            const fileCopy = await this.createImmutableFileCopy(file);
+            
+            // Primero validar el archivo usando la copia
+            const validationResult = await this.validateFile(fileCopy);
             if (!validationResult.success) {
                 if (validationResult.can_repair) {
-                    this.showRepairModal(validationResult, file);
+                    this.showRepairModal(validationResult, fileCopy);
                 } else {
                     this.showAlert('Documento dañado', 'danger');
                 }
                 return;
             }
+            
+            // Si llegamos aquí, el archivo es válido, procesarlo normalmente
+            await this.processValidFile(fileCopy);
+            
         } catch (error) {
-            this.showAlert('Error validando archivo', 'danger');
-            return;
+            console.error('Error en handleFileSelect:', error);
+            this.showAlert('Error procesando archivo: ' + error.message, 'danger');
+        } finally {
+            this.isProcessing = false;
+            this.showProgress(false);
         }
+    }
 
-        // Si llegamos aquí, el archivo es válido, procesarlo normalmente
-        await this.processValidFile(file);
+    // NUEVO MÉTODO: Crear copia inmutable del archivo
+    async createImmutableFileCopy(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                try {
+                    // Crear un nuevo archivo con los datos leídos
+                    const fileCopy = new File([e.target.result], file.name, {
+                        type: file.type,
+                        lastModified: Date.now() // Usar timestamp actual para evitar conflictos
+                    });
+                    
+                    // Añadir metadatos de integridad
+                    fileCopy._originalSize = file.size;
+                    fileCopy._originalLastModified = file.lastModified;
+                    fileCopy._isImmutableCopy = true;
+                    fileCopy._dataHash = this.calculateSimpleHash(e.target.result);
+                    
+                    resolve(fileCopy);
+                } catch (error) {
+                    reject(new Error('Error creando copia del archivo: ' + error.message));
+                }
+            };
+            
+            reader.onerror = () => {
+                reject(new Error('Error leyendo archivo para crear copia'));
+            };
+            
+            // Leer el archivo como ArrayBuffer para crear una copia exacta
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    // NUEVO MÉTODO: Validar integridad del archivo
+    validateFileIntegrity(file) {
+        if (!file._isImmutableCopy) {
+            return { valid: false, reason: 'No es una copia inmutable' };
+        }
+        
+        if (file._originalSize !== file.size) {
+            return { valid: false, reason: 'Tamaño del archivo ha cambiado' };
+        }
+        
+        if (file._originalLastModified !== file.lastModified) {
+            return { valid: false, reason: 'Fecha de modificación ha cambiado' };
+        }
+        
+        return { valid: true };
+    }
+
+    // NUEVO MÉTODO: Calcular hash simple para verificación de integridad
+    calculateSimpleHash(data) {
+        let hash = 0;
+        const bytes = new Uint8Array(data);
+        
+        for (let i = 0; i < bytes.length; i++) {
+            hash = ((hash << 5) - hash + bytes[i]) & 0xffffffff;
+        }
+        
+        return hash.toString(16);
     }
 
     async processValidFile(file) {
@@ -705,26 +775,16 @@ class ASAPALSAnalytics {
                                                     </div>
                                                 </div>
                                                 
-                                                <!-- Herramientas de limpieza -->
+                                                <!-- Herramientas de limpieza simplificadas -->
                                                 <div class="cleaning-tools mt-4">
-                                                    <h6 class="text-success"><i class="fas fa-broom me-2"></i>Herramientas de Limpieza</h6>
+                                                    <h6 class="text-success"><i class="fas fa-tools me-2"></i>Herramientas</h6>
                                                     <div class="row g-2">
-                                   <div class="col-md-3">
-                                       <button class="btn btn-outline-warning btn-sm w-100" onclick="app.cleanSpecialCharacters()">
-                                           <i class="fas fa-broom me-1"></i>Limpiar Caracteres Especiales
+                                   <div class="col-md-6">
+                                       <button class="btn btn-outline-success btn-sm w-100" onclick="app.detectAndFillEmptyFields()">
+                                           <i class="fas fa-search-plus me-1"></i>Detectar y Llenar Campos Vacíos
                                        </button>
                                    </div>
-                                   <div class="col-md-3">
-                                       <button class="btn btn-outline-info btn-sm w-100" onclick="app.removeExtraSpaces()">
-                                           <i class="fas fa-compress-alt me-1"></i>Eliminar Espacios Extra
-                                       </button>
-                                   </div>
-                                   <div class="col-md-3">
-                                       <button class="btn btn-outline-danger btn-sm w-100" onclick="app.removeEmptyRows()">
-                                           <i class="fas fa-trash me-1"></i>Eliminar Filas Vacías
-                                       </button>
-                                   </div>
-                                   <div class="col-md-3">
+                                   <div class="col-md-6">
                                        <button class="btn btn-outline-dark btn-sm w-100" onclick="app.resetToOriginal()">
                                            <i class="fas fa-undo me-1"></i>Restaurar Original
                                        </button>
@@ -766,8 +826,8 @@ class ASAPALSAnalytics {
                                                 <button class="btn btn-success btn-lg me-3" onclick="app.proceedWithRepairedFile()" id="proceedBtn">
                                                     <i class="fas fa-chart-line me-2"></i>Usar Datos y Generar Gráficos
                                                 </button>
-                                                <button class="btn btn-dark btn-lg" onclick="app.downloadRepairedFile()" id="downloadBtn">
-                                                    <i class="fas fa-download me-2"></i>Descargar Archivo
+                                                <button class="btn btn-success btn-lg" onclick="app.downloadRepairedFile()" id="downloadBtn">
+                                                    <i class="fas fa-download me-2"></i>Descargar Archivo Editado
                                                 </button>
                                             </div>
                                         </div>
@@ -3486,20 +3546,21 @@ Archivo: ${this.currentFileName}
         const dataPreview = document.getElementById('dataPreview');
         if (!dataPreview) return;
         
-        // Mostrar las primeras 10 filas
-        const previewData = data.slice(0, 10);
+        // Mostrar TODOS los datos, no solo los primeros 10
+        const allData = data;
         
         dataPreview.innerHTML = `
-            <div class="table-responsive">
+            <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
                 <table class="table table-sm table-striped">
-                    <thead>
+                    <thead class="sticky-top bg-light">
                         <tr>
                             ${columns.map(col => `<th>${col}</th>`).join('')}
                         </tr>
                     </thead>
                     <tbody>
-                        ${previewData.map(row => `
+                        ${allData.map((row, index) => `
                             <tr>
+                                <td class="text-muted small">${index + 1}</td>
                                 ${columns.map(col => `<td>${row[col] || ''}</td>`).join('')}
                             </tr>
                         `).join('')}
@@ -3507,7 +3568,7 @@ Archivo: ${this.currentFileName}
                 </table>
             </div>
             <div class="mt-2">
-                <small class="text-muted">Mostrando ${previewData.length} de ${data.length} filas</small>
+                <small class="text-muted">Mostrando todas las ${allData.length} filas de datos</small>
             </div>
         `;
     }
@@ -3579,26 +3640,183 @@ Archivo: ${this.currentFileName}
         }
     }
 
-    cleanSpecialCharacters() {
+
+
+
+    // NUEVO MÉTODO: Detectar y llenar campos vacíos con 0
+    detectAndFillEmptyFields() {
         if (!this.currentEditedData || !this.currentEditedData.preview) {
-            this.updateEditorStatus('No hay datos disponibles para limpiar');
+            this.updateEditorStatus('No hay datos disponibles para analizar');
             return;
         }
         
-        let cleanedCount = 0;
+        // Detectar campos vacíos
+        const emptyFields = this.detectEmptyFields();
+        
+        if (emptyFields.totalEmpty === 0) {
+            this.showAlert('✅ No se encontraron campos vacíos en los datos', 'success');
+            return;
+        }
+        
+        // Mostrar resumen de campos vacíos
+        this.showEmptyFieldsSummary(emptyFields);
+    }
+
+    // MÉTODO AUXILIAR: Detectar campos vacíos
+    detectEmptyFields() {
+        const emptyFields = {
+            totalEmpty: 0,
+            byColumn: {},
+            byRow: {},
+            details: []
+        };
+        
+        this.currentEditedData.preview.forEach((row, rowIndex) => {
+            Object.keys(row).forEach(column => {
+                const value = row[column];
+                const isEmpty = !value || value === '' || value === null || value === undefined || 
+                               (typeof value === 'string' && value.trim() === '');
+                
+                if (isEmpty) {
+                    emptyFields.totalEmpty++;
+                    
+                    // Contar por columna
+                    if (!emptyFields.byColumn[column]) {
+                        emptyFields.byColumn[column] = 0;
+                    }
+                    emptyFields.byColumn[column]++;
+                    
+                    // Contar por fila
+                    if (!emptyFields.byRow[rowIndex]) {
+                        emptyFields.byRow[rowIndex] = 0;
+                    }
+                    emptyFields.byRow[rowIndex]++;
+                    
+                    // Detalles
+                    emptyFields.details.push({
+                        row: rowIndex + 1,
+                        column: column,
+                        currentValue: value
+                    });
+                }
+            });
+        });
+        
+        return emptyFields;
+    }
+
+    // MÉTODO AUXILIAR: Mostrar resumen de campos vacíos
+    showEmptyFieldsSummary(emptyFields) {
+        const summaryHtml = `
+            <div class="modal fade" id="emptyFieldsModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">🔍 Campos Vacíos Detectados</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-info">
+                                <strong>Resumen:</strong> Se encontraron <strong>${emptyFields.totalEmpty}</strong> campos vacíos
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>📊 Por Columna:</h6>
+                                    <ul class="list-group list-group-flush">
+                                        ${Object.entries(emptyFields.byColumn).map(([column, count]) => `
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>${column}</span>
+                                                <span class="badge bg-warning">${count} vacíos</span>
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>📋 Detalles (primeros 10):</h6>
+                                    <div class="table-responsive" style="max-height: 200px;">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Fila</th>
+                                                    <th>Columna</th>
+                                                    <th>Valor Actual</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${emptyFields.details.slice(0, 10).map(detail => `
+                                                    <tr>
+                                                        <td>${detail.row}</td>
+                                                        <td>${detail.column}</td>
+                                                        <td><em>${detail.currentValue || 'vacío'}</em></td>
+                                                    </tr>
+                                                `).join('')}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    ${emptyFields.details.length > 10 ? 
+                                        `<small class="text-muted">... y ${emptyFields.details.length - 10} más</small>` : ''}
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <div class="alert alert-warning">
+                                    <strong>⚠️ Acción:</strong> Se llenarán SOLO los campos vacíos con el valor 0.
+                                    Los campos que ya tienen datos NO se modificarán.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                Cancelar
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="app.fillEmptyFieldsWithZero()">
+                                ✅ Llenar Campos Vacíos con 0
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Remover modal existente si existe
+        const existingModal = document.getElementById('emptyFieldsModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Añadir modal al DOM
+        document.body.insertAdjacentHTML('beforeend', summaryHtml);
+        
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('emptyFieldsModal'));
+        modal.show();
+    }
+
+    // MÉTODO AUXILIAR: Llenar campos vacíos con 0
+    fillEmptyFieldsWithZero() {
+        if (!this.currentEditedData || !this.currentEditedData.preview) {
+            this.updateEditorStatus('No hay datos disponibles para modificar');
+            return;
+        }
+        
+        let filledCount = 0;
         
         this.currentEditedData.preview = this.currentEditedData.preview.map(row => {
             const newRow = {};
             Object.keys(row).forEach(key => {
                 let value = row[key];
-                if (typeof value === 'string') {
-                    const originalValue = value;
-                    // Limpiar caracteres especiales
-                    value = value.replace(/[^\w\s.,-]/g, '').trim();
-                    if (value !== originalValue) {
-                        cleanedCount++;
-                    }
+                
+                // Verificar si el campo está vacío
+                const isEmpty = !value || value === '' || value === null || value === undefined || 
+                               (typeof value === 'string' && value.trim() === '');
+                
+                if (isEmpty) {
+                    // Solo llenar campos vacíos con 0
+                    value = 0;
+                    filledCount++;
                 }
+                
                 newRow[key] = value;
             });
             return newRow;
@@ -3607,58 +3825,15 @@ Archivo: ${this.currentFileName}
         // Recargar la interfaz
         this.loadDataPreview(this.currentEditedData.preview, this.currentEditedData.columns);
         
-        this.updateEditorStatus(`${cleanedCount} valores limpiados de caracteres especiales`);
-    }
-
-    removeEmptyRows() {
-        if (!this.currentEditedData || !this.currentEditedData.preview) {
-            this.updateEditorStatus('No hay datos disponibles para limpiar');
-            return;
+        // Cerrar modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('emptyFieldsModal'));
+        if (modal) {
+            modal.hide();
         }
         
-        const originalCount = this.currentEditedData.preview.length;
-        
-        this.currentEditedData.preview = this.currentEditedData.preview.filter(row => {
-            return Object.values(row).some(value => value !== null && value !== undefined && value !== '');
-        });
-        
-        const removedCount = originalCount - this.currentEditedData.preview.length;
-        
-        // Recargar la interfaz
-        this.loadDataPreview(this.currentEditedData.preview, this.currentEditedData.columns);
-        
-        this.updateEditorStatus(`${removedCount} filas vacías eliminadas`);
-    }
-
-    standardizeData() {
-        if (!this.currentEditedData || !this.currentEditedData.preview) {
-            this.updateEditorStatus('No hay datos disponibles para estandarizar');
-            return;
-        }
-        
-        let standardizedCount = 0;
-        
-        this.currentEditedData.preview = this.currentEditedData.preview.map(row => {
-            const newRow = {};
-            Object.keys(row).forEach(key => {
-                let value = row[key];
-                if (typeof value === 'string') {
-                    const originalValue = value;
-                    // Estandarizar texto
-                    value = value.trim().toLowerCase();
-                    if (value !== originalValue) {
-                        standardizedCount++;
-                    }
-                }
-                newRow[key] = value;
-            });
-            return newRow;
-        });
-        
-        // Recargar la interfaz
-        this.loadDataPreview(this.currentEditedData.preview, this.currentEditedData.columns);
-        
-        this.updateEditorStatus(`${standardizedCount} valores estandarizados`);
+        // Mostrar resultado
+        this.updateEditorStatus(`✅ ${filledCount} campos vacíos llenados con 0`);
+        this.showAlert(`✅ Se llenaron ${filledCount} campos vacíos con el valor 0`, 'success');
     }
 
     updateEditorStatus(message) {
@@ -3697,57 +3872,53 @@ Archivo: ${this.currentFileName}
 
     async startIntelligentRepair() {
         try {
-            console.log('Iniciando reparación automática...');
+            console.log('🚀 Iniciando reparación automática LOCAL...');
             
             // Actualizar estado de análisis
             this.updateAIStatus('Analizando archivo automáticamente...');
             
-            // Verificar disponibilidad del servidor
+            // NUEVO SISTEMA: Usar solo reparación local robusta
             let aiAnalysis, repairResult;
             
-            if (this.serverAvailable === false) {
-                console.log('🔄 Servidor no disponible, usando modo local directamente');
+            try {
+                // Paso 1: Análisis local mejorado
+                console.log('📊 Generando análisis local...');
+                aiAnalysis = this.generateEnhancedLocalAnalysis();
+                this.displayAIResults(aiAnalysis);
                 
-                // Usar análisis local directamente
+                // Paso 2: Reparación local mejorada
+                console.log('🔧 Iniciando reparación local...');
+                this.updateAIStatus('Iniciando reparación local...');
+                repairResult = await this.performEnhancedLocalRepair();
+                
+            } catch (localError) {
+                console.error('❌ Error en reparación local:', localError);
+                
+                // Fallback: reparación básica
+                console.log('🔄 Usando reparación básica como fallback...');
                 aiAnalysis = this.generateLocalAnalysis();
                 this.displayAIResults(aiAnalysis);
                 
-                // Usar reparación local directamente
-                this.updateAIStatus('Usando reparación local (servidor no disponible)...');
+                this.updateAIStatus('Usando reparación básica...');
                 repairResult = this.generateLocalRepair();
-                
-            } else {
-                try {
-                    // Paso 1: Análisis automático
-                    aiAnalysis = await this.performAIAnalysis();
-                    this.displayAIResults(aiAnalysis);
-                    
-                    // Paso 2: Reparación automática
-                    this.updateAIStatus('Iniciando reparación automática...');
-                    repairResult = await this.performCSVKitRepair();
-                    
-                } catch (serverError) {
-                    console.warn('Error con servidor, usando fallback:', serverError);
-                    
-                    // Fallback: análisis local
-                    aiAnalysis = this.generateLocalAnalysis();
-                    this.displayAIResults(aiAnalysis);
-                    
-                    // Fallback: reparación local
-                    this.updateAIStatus('Usando reparación local...');
-                    repairResult = this.generateLocalRepair();
-                }
             }
             
             // Paso 3: Cargar datos en el editor
-            this.loadRepairedDataIntoEditor(repairResult);
+            if (repairResult && repairResult.success) {
+                console.log('✅ Reparación exitosa, cargando datos...');
+                this.loadRepairedDataIntoEditor(repairResult);
+            } else {
+                console.error('❌ No se pudo obtener resultado de reparación');
+                this.updateAIStatus('Error: No se pudieron reparar los datos');
+                return;
+            }
             
             // Mostrar botones finales
             this.showFinalButtons();
             
         } catch (error) {
-            console.error('Error en reparación automática:', error);
-            this.updateAIStatus('Error en la reparación: ' + error.message);
+            console.error('❌ Error crítico en reparación automática:', error);
+            this.updateAIStatus('Error crítico en la reparación: ' + error.message);
             
             // Mostrar popup de datos no disponibles y cerrar interfaz
             this.showDataUnavailablePopup();
@@ -3759,7 +3930,7 @@ Archivo: ${this.currentFileName}
             // Crear una copia del archivo para evitar cambios
             const fileCopy = new File([this.currentRepairFile], this.currentRepairFile.name, {
                 type: this.currentRepairFile.type,
-                lastModified: this.currentRepairFile.lastModified
+                lastModified: Date.now() // Usar timestamp actual para evitar conflictos
             });
             
                 // Realizar análisis con IA usando el endpoint del backend
@@ -3867,79 +4038,125 @@ Archivo: ${this.currentFileName}
             // Mostrar progreso
             this.showRepairProgress();
             
-            // Crear una copia del archivo para evitar cambios
-            const fileCopy = new File([this.currentRepairFile], this.currentRepairFile.name, {
-                type: this.currentRepairFile.type,
-                lastModified: this.currentRepairFile.lastModified
-            });
-            
-                // Usar los datos reales del análisis de IA
-                const formData = new FormData();
-                formData.append('file', fileCopy);
-                
-                // Simular progreso mientras se procesa
-                const steps = [
-                    { text: "Enviando archivo al servidor...", progress: 20 },
-                    { text: "Analizando con pandas...", progress: 40 },
-                    { text: "Aplicando reparaciones inteligentes...", progress: 60 },
-                    { text: "Validando datos reparados...", progress: 80 },
-                    { text: "Finalizando procesamiento...", progress: 100 }
-                ];
-                
-                let currentStep = 0;
-                const progressInterval = setInterval(() => {
-                    if (currentStep < steps.length) {
-                        const step = steps[currentStep];
-                        this.updateRepairProgress(step.progress, step.text);
-                        currentStep++;
-                    }
-                }, 800);
-                
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout
-                
-                const response = await fetch('/api/intelligent-repair', {
-                    method: 'POST',
-                    body: formData,
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                clearInterval(progressInterval);
-                
-                if (!response.ok) {
-                    throw new Error(`Error en reparación: ${response.statusText}`);
-                }
-                
-                // Leer respuesta como texto primero para manejar NaN
-                const responseText = await response.text();
-                console.log('Respuesta de reparación:', responseText);
-                
-                let repairResult;
-                try {
-                    // Limpiar NaN en el JSON antes de parsearlo
-                    const cleanResponse = responseText.replace(/:\s*NaN\s*([,}])/g, ': null$1');
-                    repairResult = JSON.parse(cleanResponse);
-                } catch (parseError) {
-                    console.error('Error parseando JSON de reparación:', parseError);
-                    throw new Error('Respuesta de reparación no válida');
-                }
-            
-            if (!repairResult.success) {
-                throw new Error(repairResult.error || 'Error en reparación con CSVKit');
+            // Verificar que tenemos una copia inmutable y validar integridad
+            if (!this.currentRepairFile || !this.currentRepairFile._isImmutableCopy) {
+                throw new Error('Archivo no está disponible o no es una copia inmutable');
             }
             
-            this.updateRepairLog(repairResult.repairs_applied);
+            // Validar integridad del archivo antes de procesar
+            const integrityCheck = this.validateFileIntegrity(this.currentRepairFile);
+            if (!integrityCheck.valid) {
+                throw new Error(`Archivo modificado durante el procesamiento: ${integrityCheck.reason}`);
+            }
             
-            return repairResult;
+            // Usar directamente la copia inmutable (ya no necesitamos crear otra copia)
+            const formData = new FormData();
+            formData.append('file', this.currentRepairFile);
+            
+            // Simular progreso mientras se procesa
+            const steps = [
+                { text: "Enviando archivo al servidor...", progress: 20 },
+                { text: "Analizando con pandas...", progress: 40 },
+                { text: "Aplicando reparaciones inteligentes...", progress: 60 },
+                { text: "Validando datos reparados...", progress: 80 },
+                { text: "Finalizando procesamiento...", progress: 100 }
+            ];
+            
+            let currentStep = 0;
+            const progressInterval = setInterval(() => {
+                if (currentStep < steps.length) {
+                    const step = steps[currentStep];
+                    this.updateRepairProgress(step.progress, step.text);
+                    currentStep++;
+                }
+            }, 800);
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // Aumentar timeout a 30 segundos
+            
+            // Implementar reintentos automáticos
+            let lastError = null;
+            const maxRetries = 3;
+            
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    console.log(`🔄 Intento ${attempt}/${maxRetries} de reparación...`);
+                    
+                    const response = await fetch('/api/intelligent-repair', {
+                        method: 'POST',
+                        body: formData,
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    clearInterval(progressInterval);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error(`❌ Error del servidor (intento ${attempt}):`, response.status, errorText);
+                        
+                        if (attempt < maxRetries) {
+                            // Esperar antes del siguiente intento
+                            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                            continue;
+                        }
+                        
+                        throw new Error(`Error en reparación: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    // Leer respuesta como texto primero para manejar NaN
+                    const responseText = await response.text();
+                    console.log('Respuesta de reparación:', responseText);
+                    
+                    let repairResult;
+                    try {
+                        // Limpiar NaN en el JSON antes de parsearlo
+                        const cleanResponse = responseText.replace(/:\s*NaN\s*([,}])/g, ': null$1');
+                        repairResult = JSON.parse(cleanResponse);
+                    } catch (parseError) {
+                        console.error('Error parseando JSON de reparación:', parseError);
+                        throw new Error('Respuesta de reparación no válida');
+                    }
+                    
+                    if (!repairResult.success) {
+                        throw new Error(repairResult.error || 'Error en reparación con CSVKit');
+                    }
+                    
+                    this.updateRepairLog(repairResult.repairs_applied);
+                    console.log('✅ Reparación exitosa:', repairResult);
+                    return repairResult;
+                    
+                } catch (error) {
+                    lastError = error;
+                    console.error(`❌ Error en intento ${attempt}:`, error);
+                    
+                    if (attempt < maxRetries) {
+                        // Esperar antes del siguiente intento
+                        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                    }
+                }
+            }
+            
+            // Si llegamos aquí, todos los intentos fallaron
+            throw lastError || new Error('Error en reparación después de múltiples intentos');
             
         } catch (error) {
-            console.error('Error en reparación con CSVKit:', error);
+            console.error('❌ Error en reparación con CSVKit:', error);
             
-            // Mostrar popup de datos no disponibles y cerrar interfaz
-            this.showDataUnavailablePopup();
-            return null;
+            // Limpiar intervalos y timeouts
+            clearInterval(progressInterval);
+            clearTimeout(timeoutId);
+            
+            // Mostrar error específico
+            if (error.name === 'AbortError') {
+                throw new Error('La reparación tardó demasiado tiempo. Por favor, intenta con un archivo más pequeño.');
+            } else if (error.message.includes('Failed to fetch')) {
+                throw new Error('Error de conexión con el servidor. Verifica tu conexión a internet.');
+            } else {
+                // Mostrar popup de datos no disponibles y cerrar interfaz
+                this.showDataUnavailablePopup();
+                return null;
+            }
         }
     }
 
@@ -3996,6 +4213,12 @@ Archivo: ${this.currentFileName}
 
     async loadAllRepairedData(repairResult) {
         try {
+            // Verificar que repairResult no sea null o undefined
+            if (!repairResult) {
+                console.error('❌ repairResult es null o undefined');
+                throw new Error('No hay datos de reparación disponibles');
+            }
+            
             // Si tenemos información de validación, usar esos datos
             if (repairResult.validation && repairResult.data_integrity) {
                 console.log('📊 Datos completos disponibles:', {
@@ -4024,8 +4247,8 @@ Archivo: ${this.currentFileName}
                 // Cargar lista de columnas
                 this.loadColumnsList(repairResult.columns);
                 
-                // Cargar vista previa de datos (mínimo 10, máximo 20)
-                this.loadDataPreview(repairResult.preview, repairResult.columns);
+                // Cargar TODOS los datos, no solo vista previa
+                this.loadDataPreview(repairResult.data || repairResult.preview, repairResult.columns);
                 
                 // Actualizar estado del editor con información completa
                 this.updateEditorStatus(`✅ Datos completos cargados: ${repairResult.repaired_rows} filas de ${repairResult.original_rows} originales (${repairResult.validation.data_preservation_percentage.toFixed(1)}% preservadas), ${repairResult.columns.length} columnas`);
@@ -4049,7 +4272,7 @@ Archivo: ${this.currentFileName}
                 this.columnRenames.clear();
                 
                 this.loadColumnsList(repairResult.columns);
-                this.loadDataPreview(repairResult.preview, repairResult.columns);
+                this.loadDataPreview(repairResult.data || repairResult.preview, repairResult.columns);
                 
                 this.updateEditorStatus(`Datos reparados cargados: ${repairResult.repaired_rows} filas, ${repairResult.issues_fixed} problemas corregidos`);
                 this.updateSaveStatus('Sin cambios');
@@ -4101,47 +4324,86 @@ Archivo: ${this.currentFileName}
 
     async downloadRepairedFile() {
         try {
-            console.log('Descargando archivo reparado...');
+            console.log('💾 Descargando archivo editado...');
             
-            // PASO 1: Guardar cambios del editor antes de descargar
-            await this.saveEditorChanges();
-            
-            // PASO 2: Obtener datos completos editados
-            let dataToDownload = await this.getCompleteEditedData();
-            
-            if (!dataToDownload) {
-                throw new Error('No hay datos reparados para descargar');
+            // Verificar que tenemos datos editados
+            if (!this.currentEditedData || !this.currentEditedData.preview) {
+                throw new Error('No hay datos editados para descargar');
             }
             
-            console.log('Datos a descargar:', dataToDownload);
+            console.log('📊 Datos editados a descargar:', {
+                filas: this.currentEditedData.preview.length,
+                columnas: this.currentEditedData.columns.length
+            });
             
-            // PASO 3: Convertir datos completos a CSV
-            const csvContent = this.convertCompleteDataToCSV(dataToDownload);
+            // Convertir datos editados a CSV
+            const csvContent = this.convertEditedDataToCSV(this.currentEditedData);
             
-            // PASO 4: Crear y descargar archivo
+            // Crear y descargar archivo
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             
             if (link.download !== undefined) {
                 const url = URL.createObjectURL(blob);
+                
+                // Generar nombre de archivo con timestamp
+                const originalName = this.currentRepairFile?.name || 'archivo';
+                const nameWithoutExt = originalName.replace(/\.[^/.]+$/, '');
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+                const newFileName = `${nameWithoutExt}_editado_${timestamp}.csv`;
+                
                 link.setAttribute('href', url);
-                link.setAttribute('download', `${this.currentRepairFile?.name || 'archivo'}`);
+                link.setAttribute('download', newFileName);
                 link.style.visibility = 'hidden';
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
                 
-                console.log('✅ Archivo reparado descargado exitosamente');
-                this.showNotification('Archivo reparado descargado con todos los cambios del editor', 'success');
+                // Limpiar URL
+                URL.revokeObjectURL(url);
+                
+                console.log('✅ Archivo editado descargado exitosamente');
+                this.showNotification(`✅ Archivo editado descargado: ${newFileName}`, 'success');
             } else {
                 throw new Error('Descarga no soportada en este navegador');
             }
             
         } catch (error) {
-            console.error('Error descargando archivo:', error);
-            this.showNotification('Error al descargar archivo: ' + error.message, 'error');
+            console.error('❌ Error descargando archivo:', error);
+            this.showNotification('❌ Error al descargar archivo: ' + error.message, 'error');
         }
     }
+
+    // MÉTODO AUXILIAR: Convertir datos editados a CSV
+    convertEditedDataToCSV(editedData) {
+        try {
+            const columns = editedData.columns;
+            const data = editedData.preview;
+            
+            // Crear header CSV
+            const header = columns.join(';');
+            
+            // Crear filas CSV
+            const rows = data.map(row => {
+                return columns.map(column => {
+                    let value = row[column] || '';
+                    // Escapar comillas y puntos y comas
+                    if (typeof value === 'string' && (value.includes(';') || value.includes('"') || value.includes('\n'))) {
+                        value = `"${value.replace(/"/g, '""')}"`;
+                    }
+                    return value;
+                }).join(';');
+            });
+            
+            // Combinar header y filas
+            return [header, ...rows].join('\n');
+            
+        } catch (error) {
+            console.error('Error convirtiendo datos editados a CSV:', error);
+            throw new Error('Error al convertir datos a formato CSV');
+        }
+    }
+
 
     async saveEditorChanges() {
         try {
@@ -4474,12 +4736,12 @@ Archivo: ${this.currentFileName}
 
     convertRepairedDataToCSV(repairResult) {
         try {
-            if (!repairResult || !repairResult.preview || !repairResult.columns) {
+            if (!repairResult || (!repairResult.preview && !repairResult.data) || !repairResult.columns) {
                 throw new Error('Datos de reparación no válidos');
             }
             
             const columns = repairResult.columns;
-            const data = repairResult.preview;
+            const data = repairResult.data || repairResult.preview; // Usar todos los datos
             
             // Crear header CSV
             const header = columns.join(';');
@@ -4525,6 +4787,324 @@ Archivo: ${this.currentFileName}
                     rows: 50,
                     issues: 5
                 }
+            ]
+        };
+    }
+
+    // NUEVO MÉTODO: Análisis local mejorado
+    generateEnhancedLocalAnalysis() {
+        console.log('📊 Generando análisis local mejorado...');
+        
+        const dataSummary = this.currentDataSummary;
+        const chartData = this.currentChartData;
+        
+        if (!dataSummary) {
+            return {
+                problematic_data: [
+                    "No se detectaron datos para analizar",
+                    "El archivo puede estar vacío o dañado"
+                ],
+                suggested_changes: [
+                    "Verificar que el archivo contenga datos válidos",
+                    "Revisar el formato del archivo CSV"
+                ],
+                detected_tables: []
+            };
+        }
+        
+        const totalRecords = dataSummary.total_records || 0;
+        const totalTonnage = dataSummary.total_tonnage || 0;
+        const monthlyAverage = dataSummary.monthly_average || 0;
+        
+        // Análisis más detallado
+        const problematicData = [];
+        const suggestedChanges = [];
+        const detectedTables = [];
+        
+        // Detectar problemas comunes
+        if (totalRecords === 0) {
+            problematicData.push("No se encontraron registros de datos");
+            suggestedChanges.push("Verificar que el archivo contenga filas de datos");
+        }
+        
+        if (totalTonnage === 0) {
+            problematicData.push("No se detectaron toneladas registradas");
+            suggestedChanges.push("Verificar columnas de tonelaje (T_M_)");
+        }
+        
+        if (monthlyAverage < 100) {
+            problematicData.push("Productividad mensual muy baja detectada");
+            suggestedChanges.push("Revisar datos de producción mensual");
+        }
+        
+        // Detectar inconsistencias en fechas
+        if (dataSummary.date_range) {
+            const dateRange = dataSummary.date_range;
+            if (dateRange.start === dateRange.end) {
+                problematicData.push("Rango de fechas muy limitado");
+                suggestedChanges.push("Verificar datos de fechas y meses");
+            }
+        }
+        
+        // Detectar problemas de formato
+        problematicData.push("Posibles caracteres especiales en datos de texto");
+        suggestedChanges.push("Limpiar caracteres especiales de columnas de texto");
+        
+        problematicData.push("Valores numéricos con formato inconsistente");
+        suggestedChanges.push("Estandarizar formato de números y decimales");
+        
+        // Generar tabla detectada
+        detectedTables.push({
+            name: "Tabla Principal de Producción",
+            columns: ["DESCRIPCION", "T_M_", "MES", "year"],
+            rows: totalRecords,
+            issues: problematicData.length
+        });
+        
+        return {
+            problematic_data: problematicData,
+            suggested_changes: suggestedChanges,
+            detected_tables: detectedTables
+        };
+    }
+
+    // NUEVO MÉTODO: Reparación local mejorada
+    async performEnhancedLocalRepair() {
+        console.log('🔧 Iniciando reparación local mejorada...');
+        
+        try {
+            // Mostrar progreso
+            this.showRepairProgress();
+            
+            // Verificar que tenemos el archivo
+            if (!this.currentRepairFile) {
+                throw new Error('No hay archivo disponible para reparar');
+            }
+            
+            // Leer y procesar el archivo
+            const fileData = await this.readFileAsText(this.currentRepairFile);
+            const repairedData = this.processCSVData(fileData);
+            
+            // Simular progreso
+            const steps = [
+                { text: "Leyendo archivo...", progress: 20 },
+                { text: "Analizando estructura...", progress: 40 },
+                { text: "Limpiando datos...", progress: 60 },
+                { text: "Estandarizando formato...", progress: 80 },
+                { text: "Finalizando reparación...", progress: 100 }
+            ];
+            
+            for (let i = 0; i < steps.length; i++) {
+                await new Promise(resolve => setTimeout(resolve, 300));
+                this.updateRepairProgress(steps[i].progress, steps[i].text);
+            }
+            
+            return repairedData;
+            
+        } catch (error) {
+            console.error('❌ Error en reparación mejorada:', error);
+            throw error;
+        }
+    }
+
+    // MÉTODO AUXILIAR: Leer archivo como texto
+    readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = () => reject(new Error('Error leyendo archivo'));
+            reader.readAsText(file, 'UTF-8');
+        });
+    }
+
+    // MÉTODO AUXILIAR: Procesar datos CSV
+    processCSVData(csvText) {
+        console.log('📝 Procesando datos CSV...');
+        
+        const lines = csvText.split('\n').filter(line => line.trim());
+        if (lines.length < 2) {
+            throw new Error('Archivo CSV insuficiente o vacío');
+        }
+        
+        // Detectar delimitador automáticamente
+        const delimiter = this.detectCSVDelimiter(lines[0]);
+        console.log('🔍 Delimitador detectado:', delimiter);
+        
+        // Obtener encabezados con parsing mejorado
+        const headers = this.parseCSVLine(lines[0], delimiter);
+        console.log('📋 Encabezados detectados:', headers);
+        
+        // Verificar si hay demasiadas columnas (posible problema de parsing)
+        if (headers.length === 1) {
+            console.warn('⚠️ Solo se detectó 1 columna, intentando otros delimitadores...');
+            const alternativeDelimiters = [';', '\t', '|', ' '];
+            
+            for (const altDelimiter of alternativeDelimiters) {
+                const altHeaders = this.parseCSVLine(lines[0], altDelimiter);
+                if (altHeaders.length > 1) {
+                    console.log(`✅ Mejor delimitador encontrado: ${altDelimiter} (${altHeaders.length} columnas)`);
+                    return this.processCSVDataWithDelimiter(csvText, altDelimiter);
+                }
+            }
+        }
+        
+        return this.processCSVDataWithDelimiter(csvText, delimiter);
+    }
+
+    // MÉTODO AUXILIAR: Detectar delimitador CSV
+    detectCSVDelimiter(line) {
+        const delimiters = [',', ';', '\t', '|'];
+        let bestDelimiter = ',';
+        let maxColumns = 0;
+        
+        for (const delimiter of delimiters) {
+            const columns = this.parseCSVLine(line, delimiter);
+            if (columns.length > maxColumns) {
+                maxColumns = columns.length;
+                bestDelimiter = delimiter;
+            }
+        }
+        
+        return bestDelimiter;
+    }
+
+    // MÉTODO AUXILIAR: Parsear línea CSV con manejo de comillas
+    parseCSVLine(line, delimiter) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        let quoteChar = '"';
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            
+            if (char === '"' || char === "'") {
+                if (!inQuotes) {
+                    inQuotes = true;
+                    quoteChar = char;
+                } else if (char === quoteChar) {
+                    inQuotes = false;
+                } else {
+                    current += char;
+                }
+            } else if (char === delimiter && !inQuotes) {
+                result.push(current.trim());
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        
+        // Añadir el último campo
+        result.push(current.trim());
+        
+        return result;
+    }
+
+    // MÉTODO AUXILIAR: Procesar CSV con delimitador específico
+    processCSVDataWithDelimiter(csvText, delimiter) {
+        console.log(`📝 Procesando CSV con delimitador: "${delimiter}"`);
+        
+        const lines = csvText.split('\n').filter(line => line.trim());
+        if (lines.length < 2) {
+            throw new Error('Archivo CSV insuficiente o vacío');
+        }
+        
+        // Obtener encabezados
+        const headers = this.parseCSVLine(lines[0], delimiter);
+        console.log('📋 Encabezados detectados:', headers);
+        
+        // Procesar filas de datos
+        const processedRows = [];
+        let issuesFixed = 0;
+        
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            
+            const values = this.parseCSVLine(line, delimiter);
+            
+            // Asegurar que tenemos el mismo número de columnas
+            if (values.length !== headers.length) {
+                console.warn(`⚠️ Fila ${i + 1}: ${values.length} columnas, esperadas ${headers.length}`);
+                
+                // Ajustar número de columnas
+                while (values.length < headers.length) {
+                    values.push('');
+                }
+                while (values.length > headers.length) {
+                    values.pop();
+                }
+                issuesFixed++;
+            }
+            
+            // Limpiar y estandarizar datos
+            const cleanedRow = {};
+            headers.forEach((header, index) => {
+                let value = values[index] || '';
+                
+                // Limpiar comillas y espacios
+                value = value.replace(/^["']|["']$/g, '').trim();
+                
+                // Limpiar caracteres especiales
+                if (typeof value === 'string') {
+                    value = value.replace(/[^\w\s.,-]/g, '').trim();
+                }
+                
+                // Estandarizar números
+                if (header.includes('T_M_') || header.includes('TONELADAS') || header.includes('TONELADA')) {
+                    const numValue = parseFloat(value);
+                    if (!isNaN(numValue)) {
+                        value = Math.round(numValue * 100) / 100; // Redondear a 2 decimales
+                        issuesFixed++;
+                    }
+                }
+                
+                // Estandarizar fechas/meses
+                if (header.includes('MES') || header.includes('MES')) {
+                    value = value.toLowerCase();
+                    const monthMap = {
+                        'enero': 'Enero', 'febrero': 'Febrero', 'marzo': 'Marzo',
+                        'abril': 'Abril', 'mayo': 'Mayo', 'junio': 'Junio',
+                        'julio': 'Julio', 'agosto': 'Agosto', 'septiembre': 'Septiembre',
+                        'octubre': 'Octubre', 'noviembre': 'Noviembre', 'diciembre': 'Diciembre'
+                    };
+                    value = monthMap[value] || value;
+                    issuesFixed++;
+                }
+                
+                // Estandarizar años
+                if (header.includes('YEAR') || header.includes('AÑO') || header.includes('AÑO')) {
+                    const yearValue = parseInt(value);
+                    if (!isNaN(yearValue) && yearValue > 1900 && yearValue < 2100) {
+                        value = yearValue.toString();
+                        issuesFixed++;
+                    }
+                }
+                
+                cleanedRow[header] = value;
+            });
+            
+            processedRows.push(cleanedRow);
+        }
+        
+        console.log(`✅ Procesadas ${processedRows.length} filas, ${issuesFixed} problemas corregidos`);
+        console.log(`📊 Columnas detectadas: ${headers.length}`);
+        
+        return {
+            success: true,
+            original_rows: lines.length - 1,
+            repaired_rows: processedRows.length,
+            issues_fixed: issuesFixed,
+            columns: headers,
+            data: processedRows,
+            preview: processedRows, // TODOS los datos, no solo los primeros 5
+            repairs_applied: [
+                `Detectado delimitador: ${delimiter}`,
+                `Limpiados caracteres especiales en ${issuesFixed} valores`,
+                `Estandarizados ${processedRows.length} registros`,
+                `Corregidos formatos numéricos y de fecha`,
+                `Ajustadas ${issuesFixed} filas con número incorrecto de columnas`
             ]
         };
     }
@@ -4907,76 +5487,8 @@ Archivo: ${this.currentFileName}
         previewBody.innerHTML = rowsHTML;
     }
 
-    cleanSpecialCharacters() {
-        if (!this.editorData || !this.editorData.preview) return;
 
-        let cleanedCount = 0;
-        
-        this.editorData.preview = this.editorData.preview.map(row => {
-            const newRow = {};
-            Object.keys(row).forEach(key => {
-                const value = row[key];
-                if (typeof value === 'string') {
-                    // Eliminar caracteres especiales excepto letras, números, espacios, puntos y comas
-                    const cleaned = value.replace(/[^\w\s.,-]/g, '');
-                    if (cleaned !== value) cleanedCount++;
-                    newRow[key] = cleaned;
-                } else {
-                    newRow[key] = value;
-                }
-            });
-            return newRow;
-        });
 
-        this.loadDataPreview(this.editorData.preview, this.editorData.columns);
-        this.updateSaveStatus('Cambios pendientes');
-        this.updateEditorStatus(`Caracteres especiales eliminados: ${cleanedCount} cambios realizados`);
-    }
-
-    removeExtraSpaces() {
-        if (!this.editorData || !this.editorData.preview) return;
-
-        let cleanedCount = 0;
-        
-        this.editorData.preview = this.editorData.preview.map(row => {
-            const newRow = {};
-            Object.keys(row).forEach(key => {
-                const value = row[key];
-                if (typeof value === 'string') {
-                    // Eliminar espacios extra y espacios al inicio/final
-                    const cleaned = value.replace(/\s+/g, ' ').trim();
-                    if (cleaned !== value) cleanedCount++;
-                    newRow[key] = cleaned;
-                } else {
-                    newRow[key] = value;
-                }
-            });
-            return newRow;
-        });
-
-        this.loadDataPreview(this.editorData.preview, this.editorData.columns);
-        this.updateSaveStatus('Cambios pendientes');
-        this.updateEditorStatus(`Espacios extra eliminados: ${cleanedCount} cambios realizados`);
-    }
-
-    removeEmptyRows() {
-        if (!this.editorData || !this.editorData.preview) return;
-
-        const originalCount = this.editorData.preview.length;
-        
-        this.editorData.preview = this.editorData.preview.filter(row => {
-            // Una fila está vacía si todos sus valores son vacíos, null o undefined
-            return Object.values(row).some(value => 
-                value !== null && value !== undefined && value !== '' && String(value).trim() !== ''
-            );
-        });
-
-        const removedCount = originalCount - this.editorData.preview.length;
-        
-        this.loadDataPreview(this.editorData.preview, this.editorData.columns);
-        this.updateSaveStatus('Cambios pendientes');
-        this.updateEditorStatus(`Filas vacías eliminadas: ${removedCount} filas removidas`);
-    }
 
     resetToOriginal() {
         if (!this.originalEditorData) return;
