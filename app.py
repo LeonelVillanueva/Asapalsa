@@ -3862,4 +3862,9 @@ if __name__ == '__main__':
     print("=" * 60)
     print("💡 Para detener el servidor presiona Ctrl+C")
     print("=" * 60)
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Usar variables de entorno para configuración
+    debug_mode = os.environ.get('FLASK_DEBUG', '0') == '1'
+    host = os.environ.get('HOST', '0.0.0.0')
+    port = int(os.environ.get('PORT', 5000))
+    
+    app.run(debug=debug_mode, host=host, port=port)

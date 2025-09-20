@@ -36,33 +36,27 @@ def check_python_version():
         print("Error: Se requiere Python 3.8 o superior")
         sys.exit(1)
 
-def check_dependencies():
-    """Verificar e instalar dependencias"""
-    # Lista completa de dependencias necesarias
-    all_deps = ['flask', 'pandas', 'matplotlib', 'numpy', 'requests', 'watchdog', 'werkzeug']
-    missing_deps = []
+def check_critical_dependencies():
+    """Verificar dependencias críticas sin instalar automáticamente"""
+    critical_deps = ['flask']
     
-    for dep in all_deps:
+    for dep in critical_deps:
         try:
             __import__(dep)
         except ImportError:
-            missing_deps.append(dep)
-    
-    if missing_deps:
-        try:
-            subprocess.check_call([sys.executable, "-m", "pip", "install"] + missing_deps, 
-                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except subprocess.CalledProcessError:
-            pass  # Silenciar errores de instalación
+            print(f"Error: Dependencia crítica '{dep}' no encontrada")
+            print("Instala las dependencias con: pip install -r requirements.txt")
+            sys.exit(1)
 
 def install_requirements():
     """Instalar dependencias desde requirements.txt"""
     requirements_file = Path("requirements.txt")
     if requirements_file.exists():
         try:
+            # Instalar con timeout para evitar bloqueos
             subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"],
-                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except subprocess.CalledProcessError:
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=60)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
             pass  # Silenciar errores de instalación
 
 def create_directories():
@@ -156,9 +150,8 @@ Ejemplos de uso:
     check_python_version()
     create_directories()
     
-    # Instalar dependencias
-    install_requirements()
-    check_dependencies()
+    # Solo verificar dependencias críticas, no instalar automáticamente
+    check_critical_dependencies()
     
     # Iniciar servidor según el modo
     if args.dev:
