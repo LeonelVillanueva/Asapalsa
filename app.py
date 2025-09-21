@@ -3099,7 +3099,7 @@ def export_report():
     except Exception as e:
         return jsonify({'error': f'Error al generar reporte: {str(e)}'}), 500
 
-# Endpoint para análisis inteligente con IA
+# Endpoint para análisis de decisiones con IA
 @app.route('/api/csv-validation', methods=['POST'])
 def validate_csv_endpoint():
     """Endpoint para validar un CSV antes de procesarlo"""
@@ -3373,7 +3373,7 @@ def diagnose_csv_endpoint():
 
 @app.route('/api/generate-intelligent-analysis', methods=['POST'])
 def generate_intelligent_analysis():
-    """Genera análisis inteligente usando Google Gemini"""
+    """Genera análisis de decisiones usando Google Gemini"""
     try:
         # Manejar la decodificación de JSON de manera más robusta
         try:
@@ -3396,7 +3396,7 @@ def generate_intelligent_analysis():
         if not ai_model:
             return jsonify({
                 'success': False,
-                'analysis': 'Análisis inteligente no disponible. Configura GEMINI_API_KEY en las variables de entorno.',
+                'analysis': 'Análisis de decisiones no disponible. Configura GEMINI_API_KEY en las variables de entorno.',
                 'fallback': True
             })
         
@@ -3448,10 +3448,10 @@ def generate_intelligent_analysis():
         })
         
     except Exception as e:
-        print(f"Error generando análisis inteligente: {e}")
+        print(f"Error generando análisis de decisiones: {e}")
         return jsonify({
             'success': False,
-            'analysis': 'Error generando análisis inteligente. Usando análisis local.',
+            'analysis': 'Error generando análisis de decisiones. Usando análisis local.',
             'fallback': True
         })
 
@@ -3465,7 +3465,7 @@ def test_endpoint():
     })
 
 def read_csv_intelligently(filepath):
-    """Lee un archivo CSV de manera inteligente, probando diferentes separadores y encodings"""
+    """Lee un archivo CSV de manera automática, probando diferentes separadores y encodings"""
     encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
     separators = [';', ',', '\t', '|']
     
@@ -3628,7 +3628,7 @@ def analyze_data_without_ai(df):
     }
 
 def repair_data_intelligently(df_original, analysis_result):
-    """Repara los datos de manera inteligente basándose en el análisis de IA"""
+    """Repara los datos de manera automática basándose en el análisis de IA"""
     df_repaired = df_original.copy()
     repair_log = []
     issues_fixed = 0
@@ -3666,7 +3666,7 @@ def repair_data_intelligently(df_original, analysis_result):
                     repair_log.append(f"Columna '{col}': limpiados caracteres especiales ({changes} valores)")
                     issues_fixed += 1
         
-        # 3. Manejar valores faltantes de manera inteligente
+        # 3. Manejar valores faltantes de manera automática
         for col in df_repaired.columns:
             missing_count = df_repaired[col].isnull().sum()
             if missing_count > 0:
@@ -3708,7 +3708,7 @@ def repair_data_intelligently(df_original, analysis_result):
         return df_repaired, repair_log
         
     except Exception as e:
-        print(f"❌ Error en reparación inteligente: {e}")
+        print(f"❌ Error en reparación automática: {e}")
         # En caso de error, devolver datos originales con limpieza básica
         df_fallback = df_original.copy()
         df_fallback = df_fallback.dropna(how='all')
@@ -3765,7 +3765,7 @@ def validate_repaired_data(df_original, df_repaired):
 
 @app.route('/api/intelligent-repair', methods=['POST'])
 def intelligent_repair():
-    """Reparación inteligente avanzada con IA para análisis y decisiones"""
+    """Reparación automática avanzada con IA para análisis y decisiones"""
     try:
         if 'file' not in request.files:
             return jsonify({'error': 'No se proporcionó archivo'}), 400
@@ -3828,10 +3828,10 @@ def intelligent_repair():
             return jsonify(repair_result)
                 
         except Exception as e:
-            print(f"❌ Error en reparación inteligente: {e}")
+            print(f"❌ Error en reparación automática: {e}")
             import traceback
             traceback.print_exc()
-            return jsonify({'error': f'Error en reparación inteligente: {str(e)}'}), 500
+            return jsonify({'error': f'Error en reparación automática: {str(e)}'}), 500
         
     except Exception as e:
         print(f"❌ Error procesando archivo: {e}")
@@ -3847,9 +3847,9 @@ if __name__ == '__main__':
     print("🚀 Servidor iniciando en: http://0.0.0.0:5000")
     print("🔧 Modo debug: Activado")
     if ai_model:
-        print("🤖 Análisis inteligente: ACTIVADO (Google Gemini)")
+        print("🤖 Análisis de decisiones: ACTIVADO (Google Gemini)")
     else:
-        print("🤖 Análisis inteligente: DESACTIVADO (configura GEMINI_API_KEY)")
+        print("🤖 Análisis de decisiones: DESACTIVADO (configura GEMINI_API_KEY)")
     print("=" * 60)
     print("📊 Características disponibles:")
     print("   • Carga de archivos CSV con drag & drop")
@@ -3858,7 +3858,7 @@ if __name__ == '__main__':
     print("   • Interfaz responsive y moderna")
     print("   • Exportación de gráficos y datos")
     print("   • Generación de reportes automáticos")
-    print("   • Análisis inteligente con IA (Gemini)")
+    print("   • Análisis de decisiones con IA (Gemini)")
     print("=" * 60)
     print("💡 Para detener el servidor presiona Ctrl+C")
     print("=" * 60)

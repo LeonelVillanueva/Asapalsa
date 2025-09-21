@@ -173,7 +173,7 @@ class MobileHistorialManager {
                         <strong>Período analizado:</strong> ${dateRange}
                     </div>
                     <div class="mobile-stat-line mobile-description" id="analysis-description-${analysis.id}">
-                        <i class="fas fa-spinner fa-spin me-2"></i>Generando análisis inteligente...
+                        <i class="fas fa-spinner fa-spin me-2"></i>Generando análisis de decisiones...
                     </div>
                 </div>
             </div>
@@ -385,7 +385,7 @@ class MobileHistorialManager {
             chartSpecificInsight = 'La distribución de frecuencias identifica los rangos de valores más comunes';
         }
         
-        // Construir análisis inteligente
+        // Construir análisis de decisiones
         let analysis = `Análisis de ${dataDensity} con ${totalRecords.toLocaleString()} registros `;
         analysis += `procesando ${totalTonnage.toLocaleString()} T.M. `;
         
@@ -655,7 +655,7 @@ class MobileHistorialManager {
                             `<div class="mobile-info-line"><strong>Período analizado:</strong> ${new Date(dataSummary.date_range.start).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' })} - ${new Date(dataSummary.date_range.end).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' })}</div>` : 
                             ''}
                         <div class="mobile-info-line mobile-description" id="modal-analysis-description-${analysis.id}">
-                            <i class="fas fa-spinner fa-spin me-2"></i>Generando análisis inteligente...
+                            <i class="fas fa-spinner fa-spin me-2"></i>Generando análisis de decisiones...
                         </div>
                     </div>
                 </div>

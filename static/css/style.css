@@ -2115,7 +2115,7 @@ body {
     box-shadow: 0 5px 15px rgba(45, 80, 22, 0.2);
 }
 
-/* Modal específico para análisis inteligente */
+/* Modal específico para análisis de decisiones */
 #intelligentAnalysisModal .modal-dialog {
     max-width: 800px;
 }

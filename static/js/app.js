@@ -1073,13 +1073,13 @@ class ASAPALSAnalytics {
         // Agregar análisis con IA
         content += `
             <div class="mt-3">
-                <h6><i class="fas fa-brain me-2 text-info"></i>Análisis Inteligente del Archivo Dañado</h6>
+                <h6><i class="fas fa-chart-line me-2 text-info"></i>Análisis de Decisiones del Archivo Dañado</h6>
                 <div id="aiAnalysisContent" class="ai-analysis-loading">
                     <div class="text-center py-3">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Analizando...</span>
                         </div>
-                        <p class="mt-2 mb-0">Generando análisis inteligente...</p>
+                        <p class="mt-2 mb-0">Generando análisis de decisiones...</p>
                     </div>
                 </div>
             </div>
@@ -1302,8 +1302,8 @@ class ASAPALSAnalytics {
                 aiAnalysisContent.innerHTML = `
                     <div class="ai-analysis-result">
                         <div class="alert alert-info">
-                            <i class="fas fa-brain me-2"></i>
-                            <strong>Análisis Inteligente Completado</strong>
+                            <i class="fas fa-chart-line me-2"></i>
+                            <strong>Análisis de Decisiones Completado</strong>
                         </div>
                         <div class="analysis-text">
                             <p class="lead">${analysisText}</p>
@@ -1337,7 +1337,7 @@ class ASAPALSAnalytics {
                     <div class="ai-analysis-fallback">
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle me-2"></i>
-                            <strong>Análisis Inteligente No Disponible</strong>
+                            <strong>Análisis de Decisiones No Disponible</strong>
                         </div>
                         <div class="analysis-text">
                             <p>El archivo ha sido reparado exitosamente. Se detectaron y corrigieron los siguientes problemas:</p>
@@ -1357,7 +1357,7 @@ class ASAPALSAnalytics {
                 aiAnalysisContent.innerHTML = `
                     <div class="alert alert-danger">
                         <i class="fas fa-times-circle me-2"></i>
-                        <strong>Error generando análisis inteligente</strong>
+                        <strong>Error generando análisis de decisiones</strong>
                         <p class="mb-0 mt-2">No se pudo completar el análisis automático del archivo reparado.</p>
                     </div>
                 `;
@@ -1727,7 +1727,7 @@ class ASAPALSAnalytics {
                 return;
             }
 
-            // Almacenar datos del gráfico para análisis inteligente
+            // Almacenar datos del gráfico para análisis de decisiones
             this.currentChartData = {
                 type: chartType,
                 title: chartConfig.data?.labels?.[0] || `Gráfico de ${chartType}`,
@@ -1963,7 +1963,7 @@ class ASAPALSAnalytics {
                 return;
             }
 
-            // Almacenar resumen para análisis inteligente
+            // Almacenar resumen para análisis de decisiones
             this.currentDataSummary = summary;
 
             this.renderSummaryCards(summary);
@@ -3131,7 +3131,7 @@ class ASAPALSAnalytics {
     
     async generateIntelligentAnalysis() {
         if (!this.currentDataSummary || !this.currentChartData) {
-            console.warn('No hay datos para generar análisis inteligente');
+            console.warn('No hay datos para generar análisis de decisiones');
             return null;
         }
         
@@ -3157,7 +3157,7 @@ class ASAPALSAnalytics {
                 return this.generateLocalAnalysis();
             }
         } catch (error) {
-            console.error('Error generando análisis inteligente:', error);
+            console.error('Error generando análisis de decisiones:', error);
             return this.generateLocalAnalysis();
         }
     }
@@ -3227,7 +3227,7 @@ class ASAPALSAnalytics {
             chartSpecificInsight = 'La distribución de frecuencias identifica los rangos de valores más comunes y patrones de concentración';
         }
         
-        // Construir análisis inteligente
+        // Construir análisis de decisiones
         let analysis = `Análisis de ${dataDensity} con ${totalRecords.toLocaleString()} registros procesando ${totalTonnage.toLocaleString()} T.M. `;
         
         if (temporalInsight) {
@@ -3247,7 +3247,7 @@ class ASAPALSAnalytics {
         const modal = document.getElementById('intelligentAnalysisModal');
         
         if (!modal) {
-            this.showAlert('Error: Modal de análisis inteligente no encontrado', 'danger');
+            this.showAlert('Error: Modal de análisis de decisiones no encontrado', 'danger');
             return;
         }
         
@@ -3259,7 +3259,7 @@ class ASAPALSAnalytics {
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Generando análisis...</span>
                     </div>
-                    <p class="mt-3">Generando análisis inteligente...</p>
+                    <p class="mt-3">Generando análisis de decisiones...</p>
                 </div>
             `;
         }
@@ -3280,7 +3280,7 @@ class ASAPALSAnalytics {
         } catch (error) {
             console.error('Error inicializando modal:', error);
             // Fallback: mostrar alerta simple
-            this.showAlert('Error al abrir el análisis inteligente', 'danger');
+            this.showAlert('Error al abrir el análisis de decisiones', 'danger');
             return;
         }
         
@@ -3293,12 +3293,10 @@ class ASAPALSAnalytics {
                 <div class="intelligent-analysis-content">
                     <div class="analysis-header mb-4">
                         <h5 class="analysis-title">
-                            <i class="fas fa-brain me-2 text-primary"></i>
-                            Análisis Inteligente
+                            Análisis de Decisiones
                         </h5>
                         <div class="analysis-meta">
                             <small class="text-muted">
-                                <i class="fas fa-chart-${this.getChartIcon(this.currentChartType)} me-1"></i>
                                 ${this.getChartTypeName(this.currentChartType)}
                                 • ${new Date().toLocaleString('es-ES')}
                             </small>
@@ -3321,6 +3319,7 @@ class ASAPALSAnalytics {
                         </div>
                     </div>
                     
+                    <!-- Botones de acción ocultos
                     <div class="analysis-actions mt-4">
                         <button class="btn btn-outline-primary btn-sm" onclick="app.copyAnalysisToClipboard()">
                             <i class="fas fa-copy me-1"></i> Copiar Análisis
@@ -3329,6 +3328,7 @@ class ASAPALSAnalytics {
                             <i class="fas fa-file-pdf me-1"></i> Exportar PDF
                         </button>
                     </div>
+                    -->
                 </div>
             `;
         } catch (error) {
@@ -3429,7 +3429,7 @@ Archivo: ${this.currentFileName}
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `analisis_inteligente_${this.currentFileName}_${new Date().toISOString().split('T')[0]}.txt`;
+            a.download = `analisis_decisiones_${this.currentFileName}_${new Date().toISOString().split('T')[0]}.txt`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -4057,7 +4057,7 @@ Archivo: ${this.currentFileName}
             const steps = [
                 { text: "Enviando archivo al servidor...", progress: 20 },
                 { text: "Analizando con pandas...", progress: 40 },
-                { text: "Aplicando reparaciones inteligentes...", progress: 60 },
+                { text: "Aplicando reparaciones automáticas...", progress: 60 },
                 { text: "Validando datos reparados...", progress: 80 },
                 { text: "Finalizando procesamiento...", progress: 100 }
             ];
